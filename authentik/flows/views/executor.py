@@ -1,4 +1,5 @@
 """authentik multi-stage authentication engine"""
+
 from copy import deepcopy
 from typing import Optional
 
@@ -22,6 +23,7 @@ from sentry_sdk.api import set_tag
 from sentry_sdk.hub import Hub
 from structlog.stdlib import BoundLogger, get_logger
 
+from authentik.brands.models import Brand
 from authentik.core.models import Application
 from authentik.events.models import Event, EventAction, cleanse_dict
 from authentik.flows.apps import HIST_FLOW_EXECUTION_STAGE_TIME
@@ -60,7 +62,6 @@ from authentik.lib.utils.errors import exception_to_string
 from authentik.lib.utils.reflection import all_subclasses, class_to_path
 from authentik.lib.utils.urls import is_url_absolute, redirect_with_qs
 from authentik.policies.engine import PolicyEngine
-from authentik.tenants.models import Tenant
 
 LOGGER = get_logger()
 # Argument used to redirect user after login
@@ -274,13 +275,16 @@ class FlowExecutorView(APIView):
             stage=self.current_stage,
         )
         try:
-            with Hub.current.start_span(
-                op="authentik.flow.executor.stage",
-                description=class_path,
-            ) as span, HIST_FLOW_EXECUTION_STAGE_TIME.labels(
-                method=request.method.upper(),
-                stage_type=class_path,
-            ).time():
+            with (
+                Hub.current.start_span(
+                    op="authentik.flow.executor.stage",
+                    description=class_path,
+                ) as span,
+                HIST_FLOW_EXECUTION_STAGE_TIME.labels(
+                    method=request.method.upper(),
+                    stage_type=class_path,
+                ).time(),
+            ):
                 span.set_data("Method", request.method.upper())
                 span.set_data("authentik Stage", self.current_stage_view)
                 span.set_data("authentik Flow", self.flow.slug)
@@ -322,13 +326,16 @@ class FlowExecutorView(APIView):
             stage=self.current_stage,
         )
         try:
-            with Hub.current.start_span(
-                op="authentik.flow.executor.stage",
-                description=class_path,
-            ) as span, HIST_FLOW_EXECUTION_STAGE_TIME.labels(
-                method=request.method.upper(),
-                stage_type=class_path,
-            ).time():
+            with (
+                Hub.current.start_span(
+                    op="authentik.flow.executor.stage",
+                    description=class_path,
+                ) as span,
+                HIST_FLOW_EXECUTION_STAGE_TIME.labels(
+                    method=request.method.upper(),
+                    stage_type=class_path,
+                ).time(),
+            ):
                 span.set_data("Method", request.method.upper())
                 span.set_data("authentik Stage", self.current_stage_view)
                 span.set_data("authentik Flow", self.flow.slug)
@@ -490,11 +497,11 @@ class ToDefaultFlow(View):
 
     def get_flow(self) -> Flow:
         """Get a flow for the selected designation"""
-        tenant: Tenant = self.request.tenant
+        brand: Brand = self.request.brand
         flow = None
-        # First, attempt to get default flow from tenant
+        # First, attempt to get default flow from brand
         if self.designation == FlowDesignation.AUTHENTICATION:
-            flow = tenant.flow_authentication
+            flow = brand.flow_authentication
             # Check if we have a default flow from application
             application: Optional[Application] = self.request.session.get(
                 SESSION_KEY_APPLICATION_PRE
@@ -502,7 +509,7 @@ class ToDefaultFlow(View):
             if application and application.provider and application.provider.authentication_flow:
                 flow = application.provider.authentication_flow
         elif self.designation == FlowDesignation.INVALIDATION:
-            flow = tenant.flow_invalidation
+            flow = brand.flow_invalidation
         if flow:
             return flow
         # If no flow was set, get the first based on slug and policy

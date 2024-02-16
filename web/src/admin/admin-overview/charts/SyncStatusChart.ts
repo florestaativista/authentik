@@ -6,7 +6,7 @@ import { ChartData, ChartOptions } from "chart.js";
 import { msg } from "@lit/localize";
 import { customElement } from "lit/decorators.js";
 
-import { ProvidersApi, SourcesApi, TaskStatusEnum } from "@goauthentik/api";
+import { ProvidersApi, SourcesApi, SystemTaskStatusEnum } from "@goauthentik/api";
 
 export interface SyncStatus {
     healthy: number;
@@ -49,12 +49,12 @@ export class LDAPSyncStatusChart extends AKChart<SyncStatus[]> {
                     });
 
                     health.tasks.forEach((task) => {
-                        if (task.status !== TaskStatusEnum.Successful) {
+                        if (task.status !== SystemTaskStatusEnum.Successful) {
                             metrics.failed += 1;
                         }
                         const now = new Date().getTime();
                         const maxDelta = 3600000; // 1 hour
-                        if (!health || now - task.taskFinishTimestamp.getTime() > maxDelta) {
+                        if (!health || now - task.finishTimestamp.getTime() > maxDelta) {
                             metrics.unsynced += 1;
                         } else {
                             metrics.healthy += 1;
@@ -93,15 +93,16 @@ export class LDAPSyncStatusChart extends AKChart<SyncStatus[]> {
                     const health = await api.providersScimSyncStatusRetrieve({
                         id: element.pk,
                     });
-
-                    if (health.status !== TaskStatusEnum.Successful) {
-                        sourceKey = "failed";
-                    }
-                    const now = new Date().getTime();
-                    const maxDelta = 3600000; // 1 hour
-                    if (!health || now - health.taskFinishTimestamp.getTime() > maxDelta) {
-                        sourceKey = "unsynced";
-                    }
+                    health.tasks.forEach((task) => {
+                        if (task.status !== SystemTaskStatusEnum.Successful) {
+                            sourceKey = "failed";
+                        }
+                        const now = new Date().getTime();
+                        const maxDelta = 3600000; // 1 hour
+                        if (!health || now - task.finishTimestamp.getTime() > maxDelta) {
+                            sourceKey = "unsynced";
+                        }
+                    });
                 } catch {
                     sourceKey = "unsynced";
                 }

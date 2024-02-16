@@ -1,9 +1,9 @@
+import { BaseProviderForm } from "@goauthentik/admin/providers/BaseProviderForm";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { ascii_letters, digits, first, randomString } from "@goauthentik/common/utils";
-import { rootInterface } from "@goauthentik/elements/Base";
+import { WithBrandConfig } from "@goauthentik/elements/Interface/brandProvider";
 import "@goauthentik/elements/forms/FormGroup";
 import "@goauthentik/elements/forms/HorizontalFormElement";
-import { ModelForm } from "@goauthentik/elements/forms/ModelForm";
 import "@goauthentik/elements/forms/SearchSelect";
 
 import { msg } from "@lit/localize";
@@ -14,19 +14,11 @@ import { customElement } from "lit/decorators.js";
 import { FlowsInstancesListDesignationEnum, ProvidersApi, RadiusProvider } from "@goauthentik/api";
 
 @customElement("ak-provider-radius-form")
-export class RadiusProviderFormPage extends ModelForm<RadiusProvider, number> {
+export class RadiusProviderFormPage extends WithBrandConfig(BaseProviderForm<RadiusProvider>) {
     loadInstance(pk: number): Promise<RadiusProvider> {
         return new ProvidersApi(DEFAULT_CONFIG).providersRadiusRetrieve({
             id: pk,
         });
-    }
-
-    getSuccessMessage(): string {
-        if (this.instance) {
-            return msg("Successfully updated provider.");
-        } else {
-            return msg("Successfully created provider.");
-        }
     }
 
     async send(data: RadiusProvider): Promise<RadiusProvider> {
@@ -45,7 +37,7 @@ export class RadiusProviderFormPage extends ModelForm<RadiusProvider, number> {
     // All Provider objects have an Authorization flow, but not all providers have an Authentication
     // flow. Radius needs only one field, but it is not the Authorization field, it is an
     // Authentication field. So, yeah, we're using the authorization field to store the
-    // authentication information, which is why the ak-tenanted-flow-search call down there looks so
+    // authentication information, which is why the ak-branded-flow-search call down there looks so
     // weird-- we're looking up Authentication flows, but we're storing them in the Authorization
     // field of the target Provider.
     renderForm(): TemplateResult {
@@ -62,12 +54,12 @@ export class RadiusProviderFormPage extends ModelForm<RadiusProvider, number> {
                 ?required=${true}
                 name="authorizationFlow"
             >
-                <ak-tenanted-flow-search
+                <ak-branded-flow-search
                     flowType=${FlowsInstancesListDesignationEnum.Authentication}
                     .currentFlow=${this.instance?.authorizationFlow}
-                    .tenantFlow=${rootInterface()?.tenant?.flowAuthentication}
+                    .brandFlow=${this.brand?.flowAuthentication}
                     required
-                ></ak-tenanted-flow-search>
+                ></ak-branded-flow-search>
                 <p class="pf-c-form__helper-text">${msg("Flow used for users to authenticate.")}</p>
             </ak-form-element-horizontal>
             <ak-form-element-horizontal name="mfaSupport">

@@ -1,11 +1,11 @@
 import "@goauthentik/admin/common/ak-crypto-certificate-search";
-import "@goauthentik/admin/common/ak-flow-search/ak-tenanted-flow-search";
+import "@goauthentik/admin/common/ak-flow-search/ak-branded-flow-search";
+import { BaseProviderForm } from "@goauthentik/admin/providers/BaseProviderForm";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { first } from "@goauthentik/common/utils";
-import { rootInterface } from "@goauthentik/elements/Base";
+import { WithBrandConfig } from "@goauthentik/elements/Interface/brandProvider";
 import "@goauthentik/elements/forms/FormGroup";
 import "@goauthentik/elements/forms/HorizontalFormElement";
-import { ModelForm } from "@goauthentik/elements/forms/ModelForm";
 import "@goauthentik/elements/forms/Radio";
 import "@goauthentik/elements/forms/SearchSelect";
 
@@ -25,19 +25,11 @@ import {
 } from "@goauthentik/api";
 
 @customElement("ak-provider-ldap-form")
-export class LDAPProviderFormPage extends ModelForm<LDAPProvider, number> {
+export class LDAPProviderFormPage extends WithBrandConfig(BaseProviderForm<LDAPProvider>) {
     async loadInstance(pk: number): Promise<LDAPProvider> {
         return new ProvidersApi(DEFAULT_CONFIG).providersLdapRetrieve({
             id: pk,
         });
-    }
-
-    getSuccessMessage(): string {
-        if (this.instance) {
-            return msg("Successfully updated provider.");
-        } else {
-            return msg("Successfully created provider.");
-        }
     }
 
     async send(data: LDAPProvider): Promise<LDAPProvider> {
@@ -56,7 +48,7 @@ export class LDAPProviderFormPage extends ModelForm<LDAPProvider, number> {
     // All Provider objects have an Authorization flow, but not all providers have an Authentication
     // flow. LDAP needs only one field, but it is not an Authorization field, it is an
     // Authentication field. So, yeah, we're using the authorization field to store the
-    // authentication information, which is why the ak-tenanted-flow-search call down there looks so
+    // authentication information, which is why the ak-branded-flow-search call down there looks so
     // weird-- we're looking up Authentication flows, but we're storing them in the Authorization
     // field of the target Provider.
     renderForm(): TemplateResult {
@@ -73,12 +65,12 @@ export class LDAPProviderFormPage extends ModelForm<LDAPProvider, number> {
                 ?required=${true}
                 name="authorizationFlow"
             >
-                <ak-tenanted-flow-search
+                <ak-branded-flow-search
                     flowType=${FlowsInstancesListDesignationEnum.Authentication}
                     .currentFlow=${this.instance?.authorizationFlow}
-                    .tenantFlow=${rootInterface()?.tenant?.flowAuthentication}
+                    .brandFlow=${this.brand?.flowAuthentication}
                     required
-                ></ak-tenanted-flow-search>
+                ></ak-branded-flow-search>
                 <p class="pf-c-form__helper-text">${msg("Flow used for users to authenticate.")}</p>
             </ak-form-element-horizontal>
             <ak-form-element-horizontal label=${msg("Search group")} name="searchGroup">
@@ -206,7 +198,7 @@ export class LDAPProviderFormPage extends ModelForm<LDAPProvider, number> {
                     </ak-form-element-horizontal>
                     <ak-form-element-horizontal label=${msg("Certificate")} name="certificate">
                         <ak-crypto-certificate-search
-                            certificate=${this.instance?.certificate}
+                            .certificate=${this.instance?.certificate}
                         ></ak-crypto-certificate-search>
                         <p class="pf-c-form__helper-text">
                             ${msg(

@@ -1,4 +1,5 @@
-import { EventGeo } from "@goauthentik/admin/events/utils";
+import { EventGeo, EventUser } from "@goauthentik/admin/events/utils";
+import { getRelativeTime } from "@goauthentik/app/common/utils";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { EventWithContext } from "@goauthentik/common/events";
 import { actionToLabel } from "@goauthentik/common/labels";
@@ -87,27 +88,7 @@ export class EventViewPage extends AKElement {
                                     </dt>
                                     <dd class="pf-c-description-list__description">
                                         <div class="pf-c-description-list__text">
-                                            ${this.event.user?.username
-                                                ? html`<div>
-                                                          <a
-                                                              href="#/identity/users/${this.event
-                                                                  .user.pk}"
-                                                              >${this.event.user?.username}</a
-                                                          >
-                                                      </div>
-                                                      ${this.event.user.on_behalf_of
-                                                          ? html`<small>
-                                                                <a
-                                                                    href="#/identity/users/${this
-                                                                        .event.user.on_behalf_of
-                                                                        .pk}"
-                                                                    >${msg(
-                                                                        str`On behalf of ${this.event.user.on_behalf_of.username}`,
-                                                                    )}</a
-                                                                >
-                                                            </small>`
-                                                          : html``}`
-                                                : html`-`}
+                                            ${EventUser(this.event)}
                                         </div>
                                     </dd>
                                 </div>
@@ -119,7 +100,8 @@ export class EventViewPage extends AKElement {
                                     </dt>
                                     <dd class="pf-c-description-list__description">
                                         <div class="pf-c-description-list__text">
-                                            ${this.event.created?.toLocaleString()}
+                                            <div>${getRelativeTime(this.event.created)}</div>
+                                            <small>${this.event.created.toLocaleString()}</small>
                                         </div>
                                     </dd>
                                 </div>
@@ -139,12 +121,12 @@ export class EventViewPage extends AKElement {
                                 <div class="pf-c-description-list__group">
                                     <dt class="pf-c-description-list__term">
                                         <span class="pf-c-description-list__text"
-                                            >${msg("Tenant")}</span
+                                            >${msg("Brand")}</span
                                         >
                                     </dt>
                                     <dd class="pf-c-description-list__description">
                                         <div class="pf-c-description-list__text">
-                                            ${this.event.tenant?.name || msg("-")}
+                                            ${this.event.brand?.name || msg("-")}
                                         </div>
                                     </dd>
                                 </div>
@@ -153,6 +135,12 @@ export class EventViewPage extends AKElement {
                     </div>
                     <div class="pf-c-card pf-l-grid__item pf-m-12-col pf-m-8-col-on-xl">
                         <ak-event-info .event=${this.event}></ak-event-info>
+                    </div>
+                    <div class="pf-c-card pf-l-grid__item pf-m-12-col">
+                        <div class="pf-c-card__title">${msg("Raw event info")}</div>
+                        <div class="pf-c-card__body">
+                            <pre>${JSON.stringify(this.event, null, 4)}</pre>
+                        </div>
                     </div>
                 </div>
             </section>`;

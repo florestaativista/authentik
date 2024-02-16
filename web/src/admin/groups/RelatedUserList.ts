@@ -7,9 +7,13 @@ import { me } from "@goauthentik/app/common/users";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { MessageLevel } from "@goauthentik/common/messages";
 import { uiConfig } from "@goauthentik/common/ui/config";
-import { first } from "@goauthentik/common/utils";
+import { getRelativeTime } from "@goauthentik/common/utils";
 import "@goauthentik/components/ak-status-label";
-import { rootInterface } from "@goauthentik/elements/Base";
+import { WithBrandConfig } from "@goauthentik/elements/Interface/brandProvider";
+import {
+    CapabilitiesEnum,
+    WithCapabilitiesConfig,
+} from "@goauthentik/elements/Interface/capabilitiesProvider";
 import "@goauthentik/elements/buttons/ActionButton";
 import "@goauthentik/elements/buttons/Dropdown";
 import "@goauthentik/elements/forms/DeleteBulkForm";
@@ -33,7 +37,6 @@ import PFBanner from "@patternfly/patternfly/components/Banner/banner.css";
 import PFDescriptionList from "@patternfly/patternfly/components/DescriptionList/description-list.css";
 
 import {
-    CapabilitiesEnum,
     CoreApi,
     CoreUsersListTypeEnum,
     Group,
@@ -107,9 +110,10 @@ export class RelatedUserAdd extends Form<{ users: number[] }> {
 }
 
 @customElement("ak-user-related-list")
-export class RelatedUserList extends Table<User> {
+export class RelatedUserList extends WithBrandConfig(WithCapabilitiesConfig(Table<User>)) {
     expandable = true;
     checkbox = true;
+    clearOnRefresh = true;
 
     searchEnabled(): boolean {
         return true;
@@ -188,15 +192,17 @@ export class RelatedUserList extends Table<User> {
 
     row(item: User): TemplateResult[] {
         const canImpersonate =
-            rootInterface()?.config?.capabilities.includes(CapabilitiesEnum.CanImpersonate) &&
-            item.pk !== this.me?.user.pk;
+            this.can(CapabilitiesEnum.CanImpersonate) && item.pk !== this.me?.user.pk;
         return [
             html`<a href="#/identity/users/${item.pk}">
                 <div>${item.username}</div>
                 <small>${item.name}</small>
             </a>`,
             html`<ak-status-label ?good=${item.isActive}></ak-status-label>`,
-            html`${first(item.lastLogin?.toLocaleString(), msg("-"))}`,
+            html`${item.lastLogin
+                ? html`<div>${getRelativeTime(item.lastLogin)}</div>
+                      <small>${item.lastLogin.toLocaleString()}</small>`
+                : msg("-")}`,
             html`<ak-forms-modal>
                     <span slot="submit"> ${msg("Update")} </span>
                     <span slot="header"> ${msg("Update User")} </span>
@@ -293,7 +299,7 @@ export class RelatedUserList extends Table<User> {
                                             ${msg("Set password")}
                                         </button>
                                     </ak-forms-modal>
-                                    ${rootInterface()?.tenant?.flowRecovery
+                                    ${this.brand?.flowRecovery
                                         ? html`
                                               <ak-action-button
                                                   class="pf-m-secondary"
@@ -355,7 +361,7 @@ export class RelatedUserList extends Table<User> {
                                           `
                                         : html` <p>
                                               ${msg(
-                                                  "To let a user directly reset a their password, configure a recovery flow on the currently active tenant.",
+                                                  "To let a user directly reset a their password, configure a recovery flow on the currently active brand.",
                                               )}
                                           </p>`}
                                 </div>

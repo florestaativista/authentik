@@ -1,4 +1,5 @@
 """Outpost models"""
+
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any, Iterable, Optional
@@ -19,6 +20,7 @@ from structlog.stdlib import get_logger
 
 from authentik import __version__, get_build_hash
 from authentik.blueprints.models import ManagedModel
+from authentik.brands.models import Brand
 from authentik.core.models import (
     USER_PATH_SYSTEM_PREFIX,
     Provider,
@@ -34,7 +36,6 @@ from authentik.lib.models import InheritanceForeignKey, SerializerModel
 from authentik.lib.sentry import SentryIgnoredException
 from authentik.lib.utils.errors import exception_to_string
 from authentik.outposts.controllers.k8s.utils import get_namespace
-from authentik.tenants.models import Tenant
 
 OUR_VERSION = parse(__version__)
 OUTPOST_HELLO_INTERVAL = 10
@@ -90,11 +91,12 @@ class OutpostModel(Model):
 
 
 class OutpostType(models.TextChoices):
-    """Outpost types, currently only the reverse proxy is available"""
+    """Outpost types"""
 
     PROXY = "proxy"
     LDAP = "ldap"
     RADIUS = "radius"
+    RAC = "rac"
 
 
 def default_outpost_config(host: Optional[str] = None):
@@ -407,9 +409,9 @@ class Outpost(SerializerModel, ManagedModel):
             else:
                 objects.append(provider)
         if self.managed:
-            for tenant in Tenant.objects.filter(web_certificate__isnull=False):
-                objects.append(tenant)
-                objects.append(tenant.web_certificate)
+            for brand in Brand.objects.filter(web_certificate__isnull=False):
+                objects.append(brand)
+                objects.append(brand.web_certificate)
         return objects
 
     def __str__(self) -> str:
@@ -459,7 +461,7 @@ class OutpostState:
     def for_instance_uid(outpost: Outpost, uid: str) -> "OutpostState":
         """Get state for a single instance"""
         key = f"{outpost.state_cache_prefix}/{uid}"
-        default_data = {"uid": uid, "channel_ids": []}
+        default_data = {"uid": uid}
         data = cache.get(key, default_data)
         if isinstance(data, str):
             cache.delete(key)

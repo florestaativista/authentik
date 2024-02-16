@@ -1,4 +1,5 @@
 """Static Authenticator models"""
+
 from base64 import b32encode
 from os import urandom
 from typing import Optional
@@ -46,11 +47,11 @@ class AuthenticatorStaticStage(ConfigurableStage, FriendlyNamedStage, Stage):
         )
 
     def __str__(self) -> str:
-        return f"Static Authenticator Stage {self.name}"
+        return f"Static Authenticator Setup Stage {self.name}"
 
     class Meta:
-        verbose_name = _("Static Authenticator Stage")
-        verbose_name_plural = _("Static Authenticator Stages")
+        verbose_name = _("Static Authenticator Setup Stage")
+        verbose_name_plural = _("Static Authenticator Setup Stages")
 
 
 class StaticDevice(SerializerModel, ThrottlingMixin, Device):

@@ -1,4 +1,5 @@
 """Blueprint helpers"""
+
 from functools import wraps
 from typing import Callable
 
@@ -38,7 +39,7 @@ def reconcile_app(app_name: str):
         def wrapper(*args, **kwargs):
             config = apps.get_app_config(app_name)
             if isinstance(config, ManagedAppConfig):
-                config.reconcile()
+                config.ready()
             return func(*args, **kwargs)
 
         return wrapper

@@ -1,4 +1,5 @@
 """Apple OAuth Views"""
+
 from time import time
 from typing import Any, Optional
 
@@ -104,8 +105,8 @@ class AppleType(SourceType):
 
     callback_view = AppleOAuth2Callback
     redirect_view = AppleOAuthRedirect
-    name = "Apple"
-    slug = "apple"
+    verbose_name = "Apple"
+    name = "apple"
 
     authorization_url = "https://appleid.apple.com/auth/authorize"
     access_token_url = "https://appleid.apple.com/auth/token"  # nosec

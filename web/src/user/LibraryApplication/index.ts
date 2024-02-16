@@ -3,6 +3,7 @@ import { truncateWords } from "@goauthentik/common/utils";
 import "@goauthentik/components/ak-app-icon";
 import { AKElement, rootInterface } from "@goauthentik/elements/Base";
 import "@goauthentik/elements/Expand";
+import "@goauthentik/user/LibraryApplication/RACLaunchEndpointModal";
 import { UserInterface } from "@goauthentik/user/UserInterface";
 
 import { msg } from "@lit/localize";
@@ -85,6 +86,22 @@ export class LibraryApplication extends AKElement {
         </ak-expand>`;
     }
 
+    renderLaunch(): TemplateResult {
+        if (!this.application) {
+            return html``;
+        }
+        if (this.application?.launchUrl === "goauthentik.io://providers/rac/launch") {
+            return html`<ak-library-rac-endpoint-launch .app=${this.application}>
+                <a slot="trigger"> ${this.application.name} </a>
+            </ak-library-rac-endpoint-launch>`;
+        }
+        return html`<a
+            href="${ifDefined(this.application.launchUrl ?? "")}"
+            target="${ifDefined(this.application.openInNewTab ? "_blank" : undefined)}"
+            >${this.application.name}</a
+        >`;
+    }
+
     render(): TemplateResult {
         if (!this.application) {
             return html`<ak-spinner></ak-spinner>`;
@@ -96,7 +113,7 @@ export class LibraryApplication extends AKElement {
             this.application.metaPublisher !== "" ||
             this.application.metaDescription !== "";
 
-        const classes = { "pf-m-selectable pf-m-selected": this.selected };
+        const classes = { "pf-m-selectable": this.selected, "pf-m-selected": this.selected };
         const styles = this.background ? { background: this.background } : {};
 
         return html` <div
@@ -111,13 +128,7 @@ export class LibraryApplication extends AKElement {
                     <ak-app-icon size=${PFSize.Large} .app=${this.application}></ak-app-icon>
                 </a>
             </div>
-            <div class="pf-c-card__title">
-                <a
-                    href="${ifDefined(this.application.launchUrl ?? "")}"
-                    target="${ifDefined(this.application.openInNewTab ? "_blank" : undefined)}"
-                    >${this.application.name}</a
-                >
-            </div>
+            <div class="pf-c-card__title">${this.renderLaunch()}</div>
             <div class="expander"></div>
             ${expandable ? this.renderExpansion(this.application) : nothing}
         </div>`;

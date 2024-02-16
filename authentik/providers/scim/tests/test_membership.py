@@ -1,6 +1,6 @@
 """SCIM Membership tests"""
+
 from django.test import TestCase
-from guardian.shortcuts import get_anonymous_user
 from requests_mock import Mocker
 
 from authentik.blueprints.tests import apply_blueprint
@@ -9,6 +9,7 @@ from authentik.lib.generators import generate_id
 from authentik.providers.scim.clients.schema import ServiceProviderConfiguration
 from authentik.providers.scim.models import SCIMMapping, SCIMProvider
 from authentik.providers.scim.tasks import scim_sync
+from authentik.tenants.models import Tenant
 
 
 class SCIMMembershipTests(TestCase):
@@ -20,8 +21,9 @@ class SCIMMembershipTests(TestCase):
     def setUp(self) -> None:
         # Delete all users and groups as the mocked HTTP responses only return one ID
         # which will cause errors with multiple users
-        User.objects.all().exclude(pk=get_anonymous_user().pk).delete()
+        User.objects.all().exclude_anonymous().delete()
         Group.objects.all().delete()
+        Tenant.objects.update(avatars="none")
 
     @apply_blueprint("system/providers-scim.yaml")
     def configure(self) -> None:
@@ -93,7 +95,7 @@ class SCIMMembershipTests(TestCase):
                     "emails": [],
                     "active": True,
                     "externalId": user.uid,
-                    "name": {"familyName": "", "formatted": "", "givenName": ""},
+                    "name": {"familyName": " ", "formatted": " ", "givenName": ""},
                     "displayName": "",
                     "userName": user.username,
                 },
@@ -184,7 +186,7 @@ class SCIMMembershipTests(TestCase):
                     "displayName": "",
                     "emails": [],
                     "externalId": user.uid,
-                    "name": {"familyName": "", "formatted": "", "givenName": ""},
+                    "name": {"familyName": " ", "formatted": " ", "givenName": ""},
                     "userName": user.username,
                 },
             )

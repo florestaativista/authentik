@@ -1,4 +1,5 @@
 """Kubernetes Prometheus ServiceMonitor Reconciler"""
+
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING
 
@@ -77,7 +78,10 @@ class PrometheusServiceMonitorReconciler(KubernetesObjectReconciler[PrometheusSe
 
     @property
     def noop(self) -> bool:
-        return (not self._crd_exists()) or (self.is_embedded)
+        if not self._crd_exists():
+            self.logger.debug("CRD doesn't exist")
+            return True
+        return self.is_embedded
 
     def _crd_exists(self) -> bool:
         """Check if the Prometheus ServiceMonitor exists"""

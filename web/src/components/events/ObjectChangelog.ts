@@ -1,3 +1,6 @@
+import { EventGeo, EventUser } from "@goauthentik/app/admin/events/utils";
+import { actionToLabel } from "@goauthentik/app/common/labels";
+import { getRelativeTime } from "@goauthentik/app/common/utils";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { EventWithContext } from "@goauthentik/common/events";
 import { uiConfig } from "@goauthentik/common/ui/config";
@@ -9,7 +12,7 @@ import "@goauthentik/elements/buttons/SpinnerButton";
 import { PaginatedResponse } from "@goauthentik/elements/table/Table";
 import { Table, TableColumn } from "@goauthentik/elements/table/Table";
 
-import { msg, str } from "@lit/localize";
+import { msg } from "@lit/localize";
 import { TemplateResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
@@ -44,7 +47,7 @@ export class ObjectChangelog extends Table<Event> {
         let modelName = this._targetModelName;
         let appName = this.targetModelApp;
         if (this._targetModelName.indexOf(".") !== -1) {
-            const parts = this._targetModelName.split(".");
+            const parts = this._targetModelName.split(".", 1);
             appName = parts[0];
             modelName = parts[1];
         }
@@ -73,15 +76,13 @@ export class ObjectChangelog extends Table<Event> {
 
     row(item: EventWithContext): TemplateResult[] {
         return [
-            html`${item.action}`,
-            html`<div>${item.user?.username}</div>
-                ${item.user.on_behalf_of
-                    ? html`<small>
-                          ${msg(str`On behalf of ${item.user.on_behalf_of.username}`)}
-                      </small>`
-                    : html``}`,
-            html`<span>${item.created?.toLocaleString()}</span>`,
-            html`<span>${item.clientIp || msg("-")}</span>`,
+            html`${actionToLabel(item.action)}`,
+            EventUser(item),
+            html`<div>${getRelativeTime(item.created)}</div>
+                <small>${item.created.toLocaleString()}</small>`,
+            html`<div>${item.clientIp || msg("-")}</div>
+
+                <small>${EventGeo(item)}</small>`,
         ];
     }
 

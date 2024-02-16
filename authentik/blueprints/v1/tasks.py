@@ -1,7 +1,9 @@
 """v1 blueprints tasks"""
+
 from dataclasses import asdict, dataclass, field
 from hashlib import sha512
 from pathlib import Path
+from sys import platform
 from typing import Optional
 
 from dacite.core import from_dict
@@ -29,15 +31,12 @@ from authentik.blueprints.v1.common import BlueprintLoader, BlueprintMetadata, E
 from authentik.blueprints.v1.importer import Importer
 from authentik.blueprints.v1.labels import LABEL_AUTHENTIK_INSTANTIATE
 from authentik.blueprints.v1.oci import OCI_PREFIX
-from authentik.events.monitored_tasks import (
-    MonitoredTask,
-    TaskResult,
-    TaskResultStatus,
-    prefill_task,
-)
+from authentik.events.models import TaskStatus
+from authentik.events.system_tasks import SystemTask, prefill_task
 from authentik.events.utils import sanitize_dict
 from authentik.lib.config import CONFIG
 from authentik.root.celery import CELERY_APP
+from authentik.tenants.models import Tenant
 
 LOGGER = get_logger()
 _file_watcher_started = False
@@ -62,7 +61,12 @@ def start_blueprint_watcher():
     if _file_watcher_started:
         return
     observer = Observer()
-    observer.schedule(BlueprintEventHandler(), CONFIG.get("blueprints_dir"), recursive=True)
+    kwargs = {}
+    if platform.startswith("linux"):
+        kwargs["event_filter"] = (FileCreatedEvent, FileModifiedEvent)
+    observer.schedule(
+        BlueprintEventHandler(), CONFIG.get("blueprints_dir"), recursive=True, **kwargs
+    )
     observer.start()
     _file_watcher_started = True
 
@@ -70,21 +74,36 @@ def start_blueprint_watcher():
 class BlueprintEventHandler(FileSystemEventHandler):
     """Event handler for blueprint events"""
 
-    def on_any_event(self, event: FileSystemEvent):
-        if not isinstance(event, (FileCreatedEvent, FileModifiedEvent)):
-            return
+    # We only ever get creation and modification events.
+    # See the creation of the Observer instance above for the event filtering.
+
+    # Even though we filter to only get file events, we might still get
+    # directory events as some implementations such as inotify do not support
+    # filtering on file/directory.
+
+    def dispatch(self, event: FileSystemEvent) -> None:
+        """Call specific event handler method. Ignores directory changes."""
         if event.is_directory:
-            return
-        if isinstance(event, FileCreatedEvent):
-            LOGGER.debug("new blueprint file created, starting discovery")
-            blueprints_discovery.delay()
-        if isinstance(event, FileModifiedEvent):
-            path = Path(event.src_path)
-            root = Path(CONFIG.get("blueprints_dir")).absolute()
-            rel_path = str(path.relative_to(root))
-            for instance in BlueprintInstance.objects.filter(path=rel_path, enabled=True):
-                LOGGER.debug("modified blueprint file, starting apply", instance=instance)
-                apply_blueprint.delay(instance.pk.hex)
+            return None
+        return super().dispatch(event)
+
+    def on_created(self, event: FileSystemEvent):
+        """Process file creation"""
+        LOGGER.debug("new blueprint file created, starting discovery")
+        for tenant in Tenant.objects.filter(ready=True):
+            with tenant:
+                blueprints_discovery.delay()
+
+    def on_modified(self, event: FileSystemEvent):
+        """Process file modification"""
+        path = Path(event.src_path)
+        root = Path(CONFIG.get("blueprints_dir")).absolute()
+        rel_path = str(path.relative_to(root))
+        for tenant in Tenant.objects.filter(ready=True):
+            with tenant:
+                for instance in BlueprintInstance.objects.filter(path=rel_path, enabled=True):
+                    LOGGER.debug("modified blueprint file, starting apply", instance=instance)
+                    apply_blueprint.delay(instance.pk.hex)
 
 
 @CELERY_APP.task(
@@ -98,57 +117,49 @@ def blueprints_find_dict():
     return blueprints
 
 
-def blueprints_find():
+def blueprints_find() -> list[BlueprintFile]:
     """Find blueprints and return valid ones"""
     blueprints = []
     root = Path(CONFIG.get("blueprints_dir"))
     for path in root.rglob("**/*.yaml"):
+        rel_path = path.relative_to(root)
         # Check if any part in the path starts with a dot and assume a hidden file
         if any(part for part in path.parts if part.startswith(".")):
             continue
-        LOGGER.debug("found blueprint", path=str(path))
         with open(path, "r", encoding="utf-8") as blueprint_file:
             try:
                 raw_blueprint = load(blueprint_file.read(), BlueprintLoader)
             except YAMLError as exc:
                 raw_blueprint = None
-                LOGGER.warning("failed to parse blueprint", exc=exc, path=str(path))
+                LOGGER.warning("failed to parse blueprint", exc=exc, path=str(rel_path))
             if not raw_blueprint:
                 continue
             metadata = raw_blueprint.get("metadata", None)
             version = raw_blueprint.get("version", 1)
             if version != 1:
-                LOGGER.warning("invalid blueprint version", version=version, path=str(path))
+                LOGGER.warning("invalid blueprint version", version=version, path=str(rel_path))
                 continue
         file_hash = sha512(path.read_bytes()).hexdigest()
-        blueprint = BlueprintFile(
-            str(path.relative_to(root)), version, file_hash, int(path.stat().st_mtime)
-        )
+        blueprint = BlueprintFile(str(rel_path), version, file_hash, int(path.stat().st_mtime))
         blueprint.meta = from_dict(BlueprintMetadata, metadata) if metadata else None
         blueprints.append(blueprint)
-        LOGGER.debug(
-            "parsed & loaded blueprint",
-            hash=file_hash,
-            path=str(path),
-        )
     return blueprints
 
 
 @CELERY_APP.task(
-    throws=(DatabaseError, ProgrammingError, InternalError), base=MonitoredTask, bind=True
+    throws=(DatabaseError, ProgrammingError, InternalError), base=SystemTask, bind=True
 )
 @prefill_task
-def blueprints_discovery(self: MonitoredTask):
+def blueprints_discovery(self: SystemTask, path: Optional[str] = None):
     """Find blueprints and check if they need to be created in the database"""
     count = 0
     for blueprint in blueprints_find():
+        if path and blueprint.path != path:
+            continue
         check_blueprint_v1_file(blueprint)
         count += 1
     self.set_status(
-        TaskResult(
-            TaskResultStatus.SUCCESSFUL,
-            messages=[_("Successfully imported %(count)d files." % {"count": count})],
-        )
+        TaskStatus.SUCCESSFUL, _("Successfully imported %(count)d files." % {"count": count})
     )
 
 
@@ -171,15 +182,19 @@ def check_blueprint_v1_file(blueprint: BlueprintFile):
             metadata={},
         )
         instance.save()
+        LOGGER.info(
+            "Creating new blueprint instance from file", instance=instance, path=instance.path
+        )
     if instance.last_applied_hash != blueprint.hash:
+        LOGGER.info("Applying blueprint due to changed file", instance=instance, path=instance.path)
         apply_blueprint.delay(str(instance.pk))
 
 
 @CELERY_APP.task(
     bind=True,
-    base=MonitoredTask,
+    base=SystemTask,
 )
-def apply_blueprint(self: MonitoredTask, instance_pk: str):
+def apply_blueprint(self: SystemTask, instance_pk: str):
     """Apply single blueprint"""
     self.save_on_success = False
     instance: Optional[BlueprintInstance] = None
@@ -197,18 +212,18 @@ def apply_blueprint(self: MonitoredTask, instance_pk: str):
         if not valid:
             instance.status = BlueprintInstanceStatus.ERROR
             instance.save()
-            self.set_status(TaskResult(TaskResultStatus.ERROR, [x["event"] for x in logs]))
+            self.set_status(TaskStatus.ERROR, *[x["event"] for x in logs])
             return
         applied = importer.apply()
         if not applied:
             instance.status = BlueprintInstanceStatus.ERROR
             instance.save()
-            self.set_status(TaskResult(TaskResultStatus.ERROR, "Failed to apply"))
+            self.set_status(TaskStatus.ERROR, "Failed to apply")
             return
         instance.status = BlueprintInstanceStatus.SUCCESSFUL
         instance.last_applied_hash = file_hash
         instance.last_applied = now()
-        self.set_status(TaskResult(TaskResultStatus.SUCCESSFUL))
+        self.set_status(TaskStatus.SUCCESSFUL)
     except (
         DatabaseError,
         ProgrammingError,
@@ -219,7 +234,7 @@ def apply_blueprint(self: MonitoredTask, instance_pk: str):
     ) as exc:
         if instance:
             instance.status = BlueprintInstanceStatus.ERROR
-        self.set_status(TaskResult(TaskResultStatus.ERROR).with_error(exc))
+        self.set_error(exc)
     finally:
         if instance:
             instance.save()

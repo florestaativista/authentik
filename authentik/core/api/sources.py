@@ -1,4 +1,5 @@
 """Source API Views"""
+
 from typing import Iterable
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -38,7 +39,7 @@ class SourceSerializer(ModelSerializer, MetaNameSerializer):
 
     managed = ReadOnlyField()
     component = SerializerMethodField()
-    icon = ReadOnlyField(source="get_icon")
+    icon = ReadOnlyField(source="icon_url")
 
     def get_component(self, obj: Source) -> str:
         """Get object component so that we know how to edit the object"""

@@ -1,4 +1,5 @@
 """Reputation policy API Views"""
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import mixins
 from rest_framework.exceptions import ValidationError
@@ -47,6 +48,7 @@ class ReputationSerializer(ModelSerializer):
             "identifier",
             "ip",
             "ip_geo_data",
+            "ip_asn_data",
             "score",
             "updated",
         ]

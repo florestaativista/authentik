@@ -9,9 +9,14 @@ import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { userTypeToLabel } from "@goauthentik/common/labels";
 import { MessageLevel } from "@goauthentik/common/messages";
 import { DefaultUIConfig, uiConfig } from "@goauthentik/common/ui/config";
-import { first } from "@goauthentik/common/utils";
+import { getRelativeTime } from "@goauthentik/common/utils";
 import "@goauthentik/components/ak-status-label";
 import { rootInterface } from "@goauthentik/elements/Base";
+import { WithBrandConfig } from "@goauthentik/elements/Interface/brandProvider";
+import {
+    CapabilitiesEnum,
+    WithCapabilitiesConfig,
+} from "@goauthentik/elements/Interface/capabilitiesProvider";
 import { PFSize } from "@goauthentik/elements/Spinner";
 import "@goauthentik/elements/TreeView";
 import "@goauthentik/elements/buttons/ActionButton";
@@ -33,14 +38,7 @@ import PFAlert from "@patternfly/patternfly/components/Alert/alert.css";
 import PFCard from "@patternfly/patternfly/components/Card/card.css";
 import PFDescriptionList from "@patternfly/patternfly/components/DescriptionList/description-list.css";
 
-import {
-    CapabilitiesEnum,
-    CoreApi,
-    ResponseError,
-    SessionUser,
-    User,
-    UserPath,
-} from "@goauthentik/api";
+import { CoreApi, ResponseError, SessionUser, User, UserPath } from "@goauthentik/api";
 
 export const requestRecoveryLink = (user: User) =>
     new CoreApi(DEFAULT_CONFIG)
@@ -63,7 +61,7 @@ export const requestRecoveryLink = (user: User) =>
                 showMessage({
                     level: MessageLevel.error,
                     message: msg(
-                        "The current tenant must have a recovery flow configured to use a recovery link",
+                        "The current brand must have a recovery flow configured to use a recovery link",
                     ),
                 }),
             ),
@@ -93,9 +91,10 @@ const recoveryButtonStyles = css`
 `;
 
 @customElement("ak-user-list")
-export class UserListPage extends TablePage<User> {
+export class UserListPage extends WithBrandConfig(WithCapabilitiesConfig(TablePage<User>)) {
     expandable = true;
     checkbox = true;
+    clearOnRefresh = true;
 
     searchEnabled(): boolean {
         return true;
@@ -160,6 +159,7 @@ export class UserListPage extends TablePage<User> {
             new TableColumn(msg("Name"), "username"),
             new TableColumn(msg("Active"), "is_active"),
             new TableColumn(msg("Last login"), "last_login"),
+            new TableColumn(msg("Type"), "type"),
             new TableColumn(msg("Actions")),
         ];
     }
@@ -244,15 +244,18 @@ export class UserListPage extends TablePage<User> {
 
     row(item: User): TemplateResult[] {
         const canImpersonate =
-            rootInterface()?.config?.capabilities.includes(CapabilitiesEnum.CanImpersonate) &&
-            item.pk !== this.me?.user.pk;
+            this.can(CapabilitiesEnum.CanImpersonate) && item.pk !== this.me?.user.pk;
         return [
             html`<a href="#/identity/users/${item.pk}">
-                    <div>${item.username}</div>
-                    <small>${item.name === "" ? msg("<No name set>") : item.name}</small> </a
-                >&nbsp;<small>${userTypeToLabel(item.type)}</small>`,
+                <div>${item.username}</div>
+                <small>${item.name === "" ? msg("<No name set>") : item.name}</small>
+            </a>`,
             html`<ak-status-label ?good=${item.isActive}></ak-status-label>`,
-            html`${first(item.lastLogin?.toLocaleString(), msg("-"))}`,
+            html`${item.lastLogin
+                ? html`<div>${getRelativeTime(item.lastLogin)}</div>
+                      <small>${item.lastLogin.toLocaleString()}</small>`
+                : msg("-")}`,
+            html`${userTypeToLabel(item.type)}`,
             html`<ak-forms-modal>
                     <span slot="submit"> ${msg("Update")} </span>
                     <span slot="header"> ${msg("Update User")} </span>
@@ -355,7 +358,7 @@ export class UserListPage extends TablePage<User> {
                                             ${msg("Set password")}
                                         </button>
                                     </ak-forms-modal>
-                                    ${rootInterface()?.tenant?.flowRecovery
+                                    ${this.brand.flowRecovery
                                         ? html`
                                               <ak-action-button
                                                   class="pf-m-secondary"
@@ -373,7 +376,7 @@ export class UserListPage extends TablePage<User> {
                                           `
                                         : html` <p>
                                               ${msg(
-                                                  "To let a user directly reset a their password, configure a recovery flow on the currently active tenant.",
+                                                  "To let a user directly reset a their password, configure a recovery flow on the currently active brand.",
                                               )}
                                           </p>`}
                                 </div>

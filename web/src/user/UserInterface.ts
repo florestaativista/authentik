@@ -9,7 +9,7 @@ import { UserDisplay } from "@goauthentik/common/ui/config";
 import { me } from "@goauthentik/common/users";
 import { first } from "@goauthentik/common/utils";
 import { WebsocketClient } from "@goauthentik/common/ws";
-import { Interface } from "@goauthentik/elements/Base";
+import { EnterpriseAwareInterface } from "@goauthentik/elements/Interface";
 import "@goauthentik/elements/ak-locale-context";
 import "@goauthentik/elements/buttons/ActionButton";
 import "@goauthentik/elements/enterprise/EnterpriseStatusBanner";
@@ -19,7 +19,7 @@ import "@goauthentik/elements/notifications/NotificationDrawer";
 import { getURLParam, updateURLParams } from "@goauthentik/elements/router/RouteMatch";
 import "@goauthentik/elements/router/RouterOutlet";
 import "@goauthentik/elements/sidebar/Sidebar";
-import { DefaultTenant } from "@goauthentik/elements/sidebar/SidebarBrand";
+import { DefaultBrand } from "@goauthentik/elements/sidebar/SidebarBrand";
 import "@goauthentik/elements/sidebar/SidebarItem";
 import { ROUTES } from "@goauthentik/user/Routes";
 import "@patternfly/elements/pf-tooltip/pf-tooltip.js";
@@ -41,7 +41,7 @@ import PFDisplay from "@patternfly/patternfly/utilities/Display/display.css";
 import { CoreApi, EventsApi, SessionUser } from "@goauthentik/api";
 
 @customElement("ak-interface-user")
-export class UserInterface extends Interface {
+export class UserInterface extends EnterpriseAwareInterface {
     @property({ type: Boolean })
     notificationDrawerOpen = getURLParam("notificationDrawerOpen", false);
 
@@ -82,9 +82,9 @@ export class UserInterface extends Interface {
                 :host([theme="dark"]) .pf-c-page__header {
                     color: var(--ak-dark-foreground) !important;
                 }
-                .pf-c-page__header-tools-item .fas,
-                .pf-c-notification-badge__count,
-                .pf-c-page__header-tools-group .pf-c-button {
+                :host([theme="light"]) .pf-c-page__header-tools-item .fas,
+                :host([theme="light"]) .pf-c-notification-badge__count,
+                :host([theme="light"]) .pf-c-page__header-tools-group .pf-c-button {
                     color: var(--ak-global--Color--100) !important;
                 }
                 .pf-c-page {
@@ -120,6 +120,10 @@ export class UserInterface extends Interface {
                 ak-locale-context {
                     display: flex;
                     flex-direction: column;
+                }
+                .pf-c-drawer__main {
+                    min-height: calc(100vh - 76px);
+                    max-height: calc(100vh - 76px);
                 }
             `,
         ];
@@ -183,7 +187,7 @@ export class UserInterface extends Interface {
             <ak-enterprise-status interface="user"></ak-enterprise-status>
             <div class="pf-c-page">
                 <div class="background-wrapper" style="${this.uiConfig.theme.background}">
-                    ${this.uiConfig.theme.background === ""
+                    ${(this.uiConfig.theme.background || "") === ""
                         ? html`<div class="background-default-slant"></div>`
                         : html``}
                 </div>
@@ -192,11 +196,8 @@ export class UserInterface extends Interface {
                         <a href="#/" class="pf-c-page__header-brand-link">
                             <img
                                 class="pf-c-brand"
-                                src="${first(
-                                    this.tenant?.brandingLogo,
-                                    DefaultTenant.brandingLogo,
-                                )}"
-                                alt="${(this.tenant?.brandingTitle, DefaultTenant.brandingTitle)}"
+                                src="${first(this.brand?.brandingLogo, DefaultBrand.brandingLogo)}"
+                                alt="${(this.brand?.brandingTitle, DefaultBrand.brandingTitle)}"
                             />
                         </a>
                     </div>

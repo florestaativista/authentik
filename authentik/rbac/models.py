@@ -1,4 +1,5 @@
 """RBAC models"""
+
 from typing import Optional
 from uuid import uuid4
 
@@ -70,4 +71,6 @@ class SystemPermission(models.Model):
             ("view_system_tasks", _("Can view system tasks")),
             ("run_system_tasks", _("Can run system tasks")),
             ("access_admin_interface", _("Can access admin interface")),
+            ("view_system_settings", _("Can view system settings")),
+            ("edit_system_settings", _("Can edit system settings")),
         ]

@@ -1,4 +1,5 @@
 """Provider API Views"""
+
 from django.db.models import QuerySet
 from django.db.models.query import Q
 from django.utils.translation import gettext_lazy as _
@@ -16,6 +17,7 @@ from rest_framework.viewsets import GenericViewSet
 from authentik.core.api.used_by import UsedByMixin
 from authentik.core.api.utils import MetaNameSerializer, TypeCreateSerializer
 from authentik.core.models import Provider
+from authentik.enterprise.apps import EnterpriseConfig
 from authentik.lib.utils.reflection import all_subclasses
 
 
@@ -113,6 +115,7 @@ class ProviderViewSet(
                     "description": subclass.__doc__,
                     "component": subclass().component,
                     "model_name": subclass._meta.model_name,
+                    "requires_enterprise": isinstance(subclass._meta.app_config, EnterpriseConfig),
                 }
             )
         data.append(

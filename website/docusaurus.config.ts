@@ -109,6 +109,19 @@ module.exports = async function (): Promise<Config> {
                             },
                         ],
                     },
+                    {
+                        title: "Legal",
+                        items: [
+                            {
+                                to: "legal/terms",
+                                label: "Terms & Conditions",
+                            },
+                            {
+                                to: "legal/privacy-policy",
+                                label: "Privacy policy",
+                            },
+                        ],
+                    },
                 ],
                 copyright: `Copyright © ${new Date().getFullYear()} Authentik Security Inc. Built with Docusaurus.`,
             },
@@ -143,7 +156,8 @@ module.exports = async function (): Promise<Config> {
                                     repository: "goauthentik/authentik",
                                     // Only replace issues and PR links
                                     buildUrl: function (values) {
-                                        return values.type === "issue"
+                                        return values.type === "issue" ||
+                                            values.type === "mention"
                                             ? defaultBuildUrl(values)
                                             : false;
                                     },

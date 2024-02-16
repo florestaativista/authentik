@@ -1,4 +1,5 @@
 """Kubernetes deployment controller"""
+
 from io import StringIO
 
 from kubernetes.client import VersionApi, VersionInfo
@@ -81,7 +82,10 @@ class KubernetesController(BaseController):
     def up(self):
         try:
             for reconcile_key in self.reconcile_order:
-                reconciler = self.reconcilers[reconcile_key](self)
+                reconciler_cls = self.reconcilers.get(reconcile_key)
+                if not reconciler_cls:
+                    continue
+                reconciler = reconciler_cls(self)
                 reconciler.up()
 
         except (OpenApiException, HTTPError, ServiceConnectionInvalid) as exc:
@@ -95,7 +99,10 @@ class KubernetesController(BaseController):
                     all_logs += [f"{reconcile_key.title()}: Disabled"]
                     continue
                 with capture_logs() as logs:
-                    reconciler = self.reconcilers[reconcile_key](self)
+                    reconciler_cls = self.reconcilers.get(reconcile_key)
+                    if not reconciler_cls:
+                        continue
+                    reconciler = reconciler_cls(self)
                     reconciler.up()
                 all_logs += [f"{reconcile_key.title()}: {x['event']}" for x in logs]
             return all_logs
@@ -105,7 +112,10 @@ class KubernetesController(BaseController):
     def down(self):
         try:
             for reconcile_key in self.reconcile_order:
-                reconciler = self.reconcilers[reconcile_key](self)
+                reconciler_cls = self.reconcilers.get(reconcile_key)
+                if not reconciler_cls:
+                    continue
+                reconciler = reconciler_cls(self)
                 self.logger.debug("Tearing down object", name=reconcile_key)
                 reconciler.down()
 
@@ -120,7 +130,10 @@ class KubernetesController(BaseController):
                     all_logs += [f"{reconcile_key.title()}: Disabled"]
                     continue
                 with capture_logs() as logs:
-                    reconciler = self.reconcilers[reconcile_key](self)
+                    reconciler_cls = self.reconcilers.get(reconcile_key)
+                    if not reconciler_cls:
+                        continue
+                    reconciler = reconciler_cls(self)
                     reconciler.down()
                 all_logs += [f"{reconcile_key.title()}: {x['event']}" for x in logs]
             return all_logs
@@ -130,7 +143,10 @@ class KubernetesController(BaseController):
     def get_static_deployment(self) -> str:
         documents = []
         for reconcile_key in self.reconcile_order:
-            reconciler = self.reconcilers[reconcile_key](self)
+            reconciler_cls = self.reconcilers.get(reconcile_key)
+            if not reconciler_cls:
+                continue
+            reconciler = reconciler_cls(self)
             if reconciler.noop:
                 continue
             documents.append(reconciler.get_reference_object().to_dict())

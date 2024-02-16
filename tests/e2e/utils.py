@@ -1,12 +1,15 @@
 """authentik e2e testing utilities"""
+
 import json
 import os
+import socket
 from functools import lru_cache, wraps
 from os import environ
 from sys import stderr
 from time import sleep
 from typing import Any, Callable, Optional
 
+from django.apps import apps
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.db import connection
 from django.db.migrations.loader import MigrationLoader
@@ -43,6 +46,13 @@ def get_docker_tag() -> str:
     return f"gh-{branch_name}"
 
 
+def get_local_ip() -> str:
+    """Get the local machine's IP"""
+    hostname = socket.gethostname()
+    ip_addr = socket.gethostbyname(hostname)
+    return ip_addr
+
+
 class DockerTestCase:
     """Mixin for dealing with containers"""
 
@@ -63,6 +73,7 @@ class DockerTestCase:
 class SeleniumTestCase(DockerTestCase, StaticLiveServerTestCase):
     """StaticLiveServerTestCase which automatically creates a Webdriver instance"""
 
+    host = get_local_ip()
     container: Optional[Container] = None
     wait_timeout: int
     user: User
@@ -71,6 +82,7 @@ class SeleniumTestCase(DockerTestCase, StaticLiveServerTestCase):
         if IS_CI:
             print("::group::authentik Logs", file=stderr)
         super().setUp()
+        apps.get_app_config("authentik_tenants").ready()
         self.wait_timeout = 60
         self.driver = self._get_driver()
         self.driver.implicitly_wait(30)

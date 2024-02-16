@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: authentik
-  version: 2023.10.4
+  version: 2023.10.7
   description: Making authentication simple.
   contact:
     email: hello@goauthentik.io
@@ -94,6 +94,95 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenericError'
           description: ''
+  /admin/settings/:
+    get:
+      operationId: admin_settings_retrieve
+      description: Settings view
+      tags:
+      - admin
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    put:
+      operationId: admin_settings_update
+      description: Settings view
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsRequest'
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    patch:
+      operationId: admin_settings_partial_update
+      description: Settings view
+      tags:
+      - admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingsRequest'
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
   /admin/system/:
     get:
       operationId: admin_system_retrieve
@@ -135,103 +224,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemInfo'
           description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-  /admin/system_tasks/:
-    get:
-      operationId: admin_system_tasks_list
-      description: List system tasks
-      tags:
-      - admin
-      security:
-      - authentik: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Task'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-  /admin/system_tasks/{id}/:
-    get:
-      operationId: admin_system_tasks_retrieve
-      description: Get a single system task
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - admin
-      security:
-      - authentik: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-          description: ''
-        '404':
-          description: Task not found
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-  /admin/system_tasks/{id}/retry/:
-    post:
-      operationId: admin_system_tasks_retry_create
-      description: Retry task
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - admin
-      security:
-      - authentik: []
-      responses:
-        '204':
-          description: Task retried successfully
-        '404':
-          description: Task not found
-        '500':
-          description: Failed to retry task
         '400':
           content:
             application/json:
@@ -2667,6 +2659,10 @@ paths:
       description: Custom list method that checks Policy based access instead of guardian
       parameters:
       - in: query
+        name: for_user
+        schema:
+          type: integer
+      - in: query
         name: group
         schema:
           type: string
@@ -2939,8 +2935,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PolicyTestResult'
           description: ''
-        '404':
-          description: for_user user not found
         '400':
           content:
             application/json:
@@ -3241,6 +3235,359 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/UsedBy'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /core/brands/:
+    get:
+      operationId: core_brands_list
+      description: Brand Viewset
+      parameters:
+      - in: query
+        name: brand_uuid
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: branding_favicon
+        schema:
+          type: string
+      - in: query
+        name: branding_logo
+        schema:
+          type: string
+      - in: query
+        name: branding_title
+        schema:
+          type: string
+      - in: query
+        name: default
+        schema:
+          type: boolean
+      - in: query
+        name: domain
+        schema:
+          type: string
+      - in: query
+        name: flow_authentication
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: flow_device_code
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: flow_invalidation
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: flow_recovery
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: flow_unenrollment
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: flow_user_settings
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: web_certificate
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - core
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBrandList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    post:
+      operationId: core_brands_create
+      description: Brand Viewset
+      tags:
+      - core
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /core/brands/{brand_uuid}/:
+    get:
+      operationId: core_brands_retrieve
+      description: Brand Viewset
+      parameters:
+      - in: path
+        name: brand_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Brand.
+        required: true
+      tags:
+      - core
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    put:
+      operationId: core_brands_update
+      description: Brand Viewset
+      parameters:
+      - in: path
+        name: brand_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Brand.
+        required: true
+      tags:
+      - core
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    patch:
+      operationId: core_brands_partial_update
+      description: Brand Viewset
+      parameters:
+      - in: path
+        name: brand_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Brand.
+        required: true
+      tags:
+      - core
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBrandRequest'
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    delete:
+      operationId: core_brands_destroy
+      description: Brand Viewset
+      parameters:
+      - in: path
+        name: brand_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Brand.
+        required: true
+      tags:
+      - core
+      security:
+      - authentik: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /core/brands/{brand_uuid}/used_by/:
+    get:
+      operationId: core_brands_used_by_list
+      description: Get a list of all objects that use this object
+      parameters:
+      - in: path
+        name: brand_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Brand.
+        required: true
+      tags:
+      - core
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsedBy'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /core/brands/current/:
+    get:
+      operationId: core_brands_current_retrieve
+      description: Get current brand
+      tags:
+      - core
+      security:
+      - authentik: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentBrand'
           description: ''
         '400':
           content:
@@ -3615,363 +3962,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/UsedBy'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-  /core/tenants/:
-    get:
-      operationId: core_tenants_list
-      description: Tenant Viewset
-      parameters:
-      - in: query
-        name: branding_favicon
-        schema:
-          type: string
-      - in: query
-        name: branding_logo
-        schema:
-          type: string
-      - in: query
-        name: branding_title
-        schema:
-          type: string
-      - in: query
-        name: default
-        schema:
-          type: boolean
-      - in: query
-        name: domain
-        schema:
-          type: string
-      - in: query
-        name: event_retention
-        schema:
-          type: string
-      - in: query
-        name: flow_authentication
-        schema:
-          type: string
-          format: uuid
-      - in: query
-        name: flow_device_code
-        schema:
-          type: string
-          format: uuid
-      - in: query
-        name: flow_invalidation
-        schema:
-          type: string
-          format: uuid
-      - in: query
-        name: flow_recovery
-        schema:
-          type: string
-          format: uuid
-      - in: query
-        name: flow_unenrollment
-        schema:
-          type: string
-          format: uuid
-      - in: query
-        name: flow_user_settings
-        schema:
-          type: string
-          format: uuid
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
-        schema:
-          type: string
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - name: page_size
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
-      - name: search
-        required: false
-        in: query
-        description: A search term.
-        schema:
-          type: string
-      - in: query
-        name: tenant_uuid
-        schema:
-          type: string
-          format: uuid
-      - in: query
-        name: web_certificate
-        schema:
-          type: string
-          format: uuid
-      tags:
-      - core
-      security:
-      - authentik: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedTenantList'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-    post:
-      operationId: core_tenants_create
-      description: Tenant Viewset
-      tags:
-      - core
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TenantRequest'
-        required: true
-      security:
-      - authentik: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tenant'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-  /core/tenants/{tenant_uuid}/:
-    get:
-      operationId: core_tenants_retrieve
-      description: Tenant Viewset
-      parameters:
-      - in: path
-        name: tenant_uuid
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this Tenant.
-        required: true
-      tags:
-      - core
-      security:
-      - authentik: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tenant'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-    put:
-      operationId: core_tenants_update
-      description: Tenant Viewset
-      parameters:
-      - in: path
-        name: tenant_uuid
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this Tenant.
-        required: true
-      tags:
-      - core
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TenantRequest'
-        required: true
-      security:
-      - authentik: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tenant'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-    patch:
-      operationId: core_tenants_partial_update
-      description: Tenant Viewset
-      parameters:
-      - in: path
-        name: tenant_uuid
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this Tenant.
-        required: true
-      tags:
-      - core
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedTenantRequest'
-      security:
-      - authentik: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tenant'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-    delete:
-      operationId: core_tenants_destroy
-      description: Tenant Viewset
-      parameters:
-      - in: path
-        name: tenant_uuid
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this Tenant.
-        required: true
-      tags:
-      - core
-      security:
-      - authentik: []
-      responses:
-        '204':
-          description: No response body
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-  /core/tenants/{tenant_uuid}/used_by/:
-    get:
-      operationId: core_tenants_used_by_list
-      description: Get a list of all objects that use this object
-      parameters:
-      - in: path
-        name: tenant_uuid
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this Tenant.
-        required: true
-      tags:
-      - core
-      security:
-      - authentik: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/UsedBy'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
-          description: ''
-        '403':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GenericError'
-          description: ''
-  /core/tenants/current/:
-    get:
-      operationId: core_tenants_current_retrieve
-      description: Get current tenant
-      tags:
-      - core
-      security:
-      - authentik: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CurrentTenant'
           description: ''
         '400':
           content:
@@ -5915,6 +5905,11 @@ paths:
         schema:
           type: string
       - in: query
+        name: brand_name
+        schema:
+          type: string
+        description: Brand name
+      - in: query
         name: client_ip
         schema:
           type: string
@@ -5962,11 +5957,6 @@ paths:
         description: A search term.
         schema:
           type: string
-      - in: query
-        name: tenant_name
-        schema:
-          type: string
-        description: Tenant name
       - in: query
         name: username
         schema:
@@ -6263,6 +6253,86 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EventTopPerUser'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /events/events/volume/:
+    get:
+      operationId: events_events_volume_list
+      description: Get event volume for specified filters and timeframe
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: brand_name
+        schema:
+          type: string
+        description: Brand name
+      - in: query
+        name: client_ip
+        schema:
+          type: string
+      - in: query
+        name: context_authorized_app
+        schema:
+          type: string
+        description: Context Authorized application
+      - in: query
+        name: context_model_app
+        schema:
+          type: string
+        description: Context Model App
+      - in: query
+        name: context_model_name
+        schema:
+          type: string
+        description: Context Model Name
+      - in: query
+        name: context_model_pk
+        schema:
+          type: string
+        description: Context Model Primary Key
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: username
+        schema:
+          type: string
+        description: Username
+      tags:
+      - events
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Coordinate'
           description: ''
         '400':
           content:
@@ -6840,6 +6910,150 @@ paths:
                 items:
                   $ref: '#/components/schemas/UsedBy'
           description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /events/system_tasks/:
+    get:
+      operationId: events_system_tasks_list
+      description: Read-only view set that returns all background tasks
+      parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - error
+          - successful
+          - unknown
+          - warning
+        description: |-
+          * `unknown` - Unknown
+          * `successful` - Successful
+          * `warning` - Warning
+          * `error` - Error
+      - in: query
+        name: uid
+        schema:
+          type: string
+      tags:
+      - events
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSystemTaskList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /events/system_tasks/{uuid}/:
+    get:
+      operationId: events_system_tasks_retrieve
+      description: Read-only view set that returns all background tasks
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this System Task.
+        required: true
+      tags:
+      - events
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemTask'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /events/system_tasks/{uuid}/run/:
+    post:
+      operationId: events_system_tasks_run_create
+      description: Run task
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this System Task.
+        required: true
+      tags:
+      - events
+      security:
+      - authentik: []
+      responses:
+        '204':
+          description: Task retried successfully
+        '404':
+          description: Task not found
+        '500':
+          description: Failed to retry task
         '400':
           content:
             application/json:
@@ -13873,6 +14087,283 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenericError'
           description: ''
+  /propertymappings/rac/:
+    get:
+      operationId: propertymappings_rac_list
+      description: RACPropertyMapping Viewset
+      parameters:
+      - in: query
+        name: managed
+        schema:
+          type: array
+          items:
+            type: string
+        explode: true
+        style: form
+      - in: query
+        name: name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - propertymappings
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRACPropertyMappingList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    post:
+      operationId: propertymappings_rac_create
+      description: RACPropertyMapping Viewset
+      tags:
+      - propertymappings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RACPropertyMappingRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RACPropertyMapping'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /propertymappings/rac/{pm_uuid}/:
+    get:
+      operationId: propertymappings_rac_retrieve
+      description: RACPropertyMapping Viewset
+      parameters:
+      - in: path
+        name: pm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Property Mapping.
+        required: true
+      tags:
+      - propertymappings
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RACPropertyMapping'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    put:
+      operationId: propertymappings_rac_update
+      description: RACPropertyMapping Viewset
+      parameters:
+      - in: path
+        name: pm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Property Mapping.
+        required: true
+      tags:
+      - propertymappings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RACPropertyMappingRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RACPropertyMapping'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    patch:
+      operationId: propertymappings_rac_partial_update
+      description: RACPropertyMapping Viewset
+      parameters:
+      - in: path
+        name: pm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Property Mapping.
+        required: true
+      tags:
+      - propertymappings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRACPropertyMappingRequest'
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RACPropertyMapping'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    delete:
+      operationId: propertymappings_rac_destroy
+      description: RACPropertyMapping Viewset
+      parameters:
+      - in: path
+        name: pm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Property Mapping.
+        required: true
+      tags:
+      - propertymappings
+      security:
+      - authentik: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /propertymappings/rac/{pm_uuid}/used_by/:
+    get:
+      operationId: propertymappings_rac_used_by_list
+      description: Get a list of all objects that use this object
+      parameters:
+      - in: path
+        name: pm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Property Mapping.
+        required: true
+      tags:
+      - propertymappings
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsedBy'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
   /propertymappings/saml/:
     get:
       operationId: propertymappings_saml_list
@@ -15553,6 +16044,10 @@ paths:
       operationId: providers_oauth2_preview_user_retrieve
       description: Preview user data for provider
       parameters:
+      - in: query
+        name: for_user
+        schema:
+          type: integer
       - in: path
         name: id
         schema:
@@ -15954,6 +16449,274 @@ paths:
         schema:
           type: integer
         description: A unique integer value identifying this Proxy Provider.
+        required: true
+      tags:
+      - providers
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsedBy'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /providers/rac/:
+    get:
+      operationId: providers_rac_list
+      description: RACProvider Viewset
+      parameters:
+      - in: query
+        name: application__isnull
+        schema:
+          type: boolean
+      - in: query
+        name: name__iexact
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - providers
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRACProviderList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    post:
+      operationId: providers_rac_create
+      description: RACProvider Viewset
+      tags:
+      - providers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RACProviderRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RACProvider'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /providers/rac/{id}/:
+    get:
+      operationId: providers_rac_retrieve
+      description: RACProvider Viewset
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this RAC Provider.
+        required: true
+      tags:
+      - providers
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RACProvider'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    put:
+      operationId: providers_rac_update
+      description: RACProvider Viewset
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this RAC Provider.
+        required: true
+      tags:
+      - providers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RACProviderRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RACProvider'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    patch:
+      operationId: providers_rac_partial_update
+      description: RACProvider Viewset
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this RAC Provider.
+        required: true
+      tags:
+      - providers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRACProviderRequest'
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RACProvider'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    delete:
+      operationId: providers_rac_destroy
+      description: RACProvider Viewset
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this RAC Provider.
+        required: true
+      tags:
+      - providers
+      security:
+      - authentik: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /providers/rac/{id}/used_by/:
+    get:
+      operationId: providers_rac_used_by_list
+      description: Get a list of all objects that use this object
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this RAC Provider.
         required: true
       tags:
       - providers
@@ -16652,6 +17415,10 @@ paths:
       operationId: providers_saml_preview_user_retrieve
       description: Preview user data for provider
       parameters:
+      - in: query
+        name: for_user
+        schema:
+          type: integer
       - in: path
         name: id
         schema:
@@ -16999,7 +17766,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Task'
+                $ref: '#/components/schemas/SCIMSyncStatus'
           description: ''
         '404':
           description: Task not found
@@ -17028,6 +17795,523 @@ paths:
         required: true
       tags:
       - providers
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsedBy'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /rac/connection_tokens/:
+    get:
+      operationId: rac_connection_tokens_list
+      description: ConnectionToken Viewset
+      parameters:
+      - in: query
+        name: endpoint
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: provider
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: session__user
+        schema:
+          type: integer
+      tags:
+      - rac
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConnectionTokenList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /rac/connection_tokens/{connection_token_uuid}/:
+    get:
+      operationId: rac_connection_tokens_retrieve
+      description: ConnectionToken Viewset
+      parameters:
+      - in: path
+        name: connection_token_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this connection token.
+        required: true
+      tags:
+      - rac
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionToken'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    put:
+      operationId: rac_connection_tokens_update
+      description: ConnectionToken Viewset
+      parameters:
+      - in: path
+        name: connection_token_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this connection token.
+        required: true
+      tags:
+      - rac
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectionTokenRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionToken'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    patch:
+      operationId: rac_connection_tokens_partial_update
+      description: ConnectionToken Viewset
+      parameters:
+      - in: path
+        name: connection_token_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this connection token.
+        required: true
+      tags:
+      - rac
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConnectionTokenRequest'
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionToken'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    delete:
+      operationId: rac_connection_tokens_destroy
+      description: ConnectionToken Viewset
+      parameters:
+      - in: path
+        name: connection_token_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this connection token.
+        required: true
+      tags:
+      - rac
+      security:
+      - authentik: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /rac/connection_tokens/{connection_token_uuid}/used_by/:
+    get:
+      operationId: rac_connection_tokens_used_by_list
+      description: Get a list of all objects that use this object
+      parameters:
+      - in: path
+        name: connection_token_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this connection token.
+        required: true
+      tags:
+      - rac
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsedBy'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /rac/endpoints/:
+    get:
+      operationId: rac_endpoints_list
+      description: List accessible endpoints
+      parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: provider
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: superuser_full_list
+        schema:
+          type: boolean
+      tags:
+      - rac
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEndpointList'
+          description: ''
+        '400':
+          description: Bad request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    post:
+      operationId: rac_endpoints_create
+      description: Endpoint Viewset
+      tags:
+      - rac
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndpointRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Endpoint'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /rac/endpoints/{pbm_uuid}/:
+    get:
+      operationId: rac_endpoints_retrieve
+      description: Endpoint Viewset
+      parameters:
+      - in: path
+        name: pbm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Endpoint.
+        required: true
+      tags:
+      - rac
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Endpoint'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    put:
+      operationId: rac_endpoints_update
+      description: Endpoint Viewset
+      parameters:
+      - in: path
+        name: pbm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Endpoint.
+        required: true
+      tags:
+      - rac
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndpointRequest'
+        required: true
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Endpoint'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    patch:
+      operationId: rac_endpoints_partial_update
+      description: Endpoint Viewset
+      parameters:
+      - in: path
+        name: pbm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Endpoint.
+        required: true
+      tags:
+      - rac
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEndpointRequest'
+      security:
+      - authentik: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Endpoint'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    delete:
+      operationId: rac_endpoints_destroy
+      description: Endpoint Viewset
+      parameters:
+      - in: path
+        name: pbm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Endpoint.
+        required: true
+      tags:
+      - rac
+      security:
+      - authentik: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /rac/endpoints/{pbm_uuid}/used_by/:
+    get:
+      operationId: rac_endpoints_used_by_list
+      description: Get a list of all objects that use this object
+      parameters:
+      - in: path
+        name: pbm_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this RAC Endpoint.
+        required: true
+      tags:
+      - rac
       security:
       - authentik: []
       responses:
@@ -17168,6 +18452,7 @@ paths:
           type: string
           enum:
           - authentik_blueprints.blueprintinstance
+          - authentik_brands.brand
           - authentik_core.application
           - authentik_core.group
           - authentik_core.token
@@ -17190,15 +18475,14 @@ paths:
           - authentik_policies_expiry.passwordexpirypolicy
           - authentik_policies_expression.expressionpolicy
           - authentik_policies_password.passwordpolicy
-          - authentik_policies_reputation.reputation
           - authentik_policies_reputation.reputationpolicy
           - authentik_providers_ldap.ldapprovider
-          - authentik_providers_oauth2.accesstoken
-          - authentik_providers_oauth2.authorizationcode
           - authentik_providers_oauth2.oauth2provider
-          - authentik_providers_oauth2.refreshtoken
           - authentik_providers_oauth2.scopemapping
           - authentik_providers_proxy.proxyprovider
+          - authentik_providers_rac.endpoint
+          - authentik_providers_rac.racpropertymapping
+          - authentik_providers_rac.racprovider
           - authentik_providers_radius.radiusprovider
           - authentik_providers_saml.samlpropertymapping
           - authentik_providers_saml.samlprovider
@@ -17240,14 +18524,10 @@ paths:
           - authentik_stages_user_login.userloginstage
           - authentik_stages_user_logout.userlogoutstage
           - authentik_stages_user_write.userwritestage
-          - authentik_tenants.tenant
+          - authentik_tenants.domain
         description: |-
+          * `authentik_tenants.domain` - Domain
           * `authentik_crypto.certificatekeypair` - Certificate-Key Pair
-          * `authentik_events.event` - Event
-          * `authentik_events.notificationtransport` - Notification Transport
-          * `authentik_events.notification` - Notification
-          * `authentik_events.notificationrule` - Notification Rule
-          * `authentik_events.notificationwebhookmapping` - Webhook Mapping
           * `authentik_flows.flow` - Flow
           * `authentik_flows.flowstagebinding` - Flow Stage Binding
           * `authentik_outposts.dockerserviceconnection` - Docker Service-Connection
@@ -17259,14 +18539,10 @@ paths:
           * `authentik_policies_expression.expressionpolicy` - Expression Policy
           * `authentik_policies_password.passwordpolicy` - Password Policy
           * `authentik_policies_reputation.reputationpolicy` - Reputation Policy
-          * `authentik_policies_reputation.reputation` - Reputation Score
           * `authentik_policies.policybinding` - Policy Binding
           * `authentik_providers_ldap.ldapprovider` - LDAP Provider
           * `authentik_providers_oauth2.scopemapping` - Scope Mapping
           * `authentik_providers_oauth2.oauth2provider` - OAuth2/OpenID Provider
-          * `authentik_providers_oauth2.authorizationcode` - Authorization Code
-          * `authentik_providers_oauth2.accesstoken` - OAuth2 Access Token
-          * `authentik_providers_oauth2.refreshtoken` - OAuth2 Refresh Token
           * `authentik_providers_proxy.proxyprovider` - Proxy Provider
           * `authentik_providers_radius.radiusprovider` - Radius Provider
           * `authentik_providers_saml.samlprovider` - SAML Provider
@@ -17286,7 +18562,7 @@ paths:
           * `authentik_stages_authenticator_duo.duodevice` - Duo Device
           * `authentik_stages_authenticator_sms.authenticatorsmsstage` - SMS Authenticator Setup Stage
           * `authentik_stages_authenticator_sms.smsdevice` - SMS Device
-          * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Stage
+          * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Setup Stage
           * `authentik_stages_authenticator_static.staticdevice` - Static Device
           * `authentik_stages_authenticator_totp.authenticatortotpstage` - TOTP Authenticator Setup Stage
           * `authentik_stages_authenticator_totp.totpdevice` - TOTP Device
@@ -17309,13 +18585,21 @@ paths:
           * `authentik_stages_user_login.userloginstage` - User Login Stage
           * `authentik_stages_user_logout.userlogoutstage` - User Logout Stage
           * `authentik_stages_user_write.userwritestage` - User Write Stage
-          * `authentik_tenants.tenant` - Tenant
+          * `authentik_brands.brand` - Brand
           * `authentik_blueprints.blueprintinstance` - Blueprint Instance
           * `authentik_core.group` - Group
           * `authentik_core.user` - User
           * `authentik_core.application` - Application
           * `authentik_core.token` - Token
           * `authentik_enterprise.license` - License
+          * `authentik_providers_rac.racprovider` - RAC Provider
+          * `authentik_providers_rac.endpoint` - RAC Endpoint
+          * `authentik_providers_rac.racpropertymapping` - RAC Property Mapping
+          * `authentik_events.event` - Event
+          * `authentik_events.notificationtransport` - Notification Transport
+          * `authentik_events.notification` - Notification
+          * `authentik_events.notificationrule` - Notification Rule
+          * `authentik_events.notificationwebhookmapping` - Webhook Mapping
         required: true
       - in: query
         name: object_pk
@@ -17456,6 +18740,7 @@ paths:
           type: string
           enum:
           - authentik_blueprints.blueprintinstance
+          - authentik_brands.brand
           - authentik_core.application
           - authentik_core.group
           - authentik_core.token
@@ -17478,15 +18763,14 @@ paths:
           - authentik_policies_expiry.passwordexpirypolicy
           - authentik_policies_expression.expressionpolicy
           - authentik_policies_password.passwordpolicy
-          - authentik_policies_reputation.reputation
           - authentik_policies_reputation.reputationpolicy
           - authentik_providers_ldap.ldapprovider
-          - authentik_providers_oauth2.accesstoken
-          - authentik_providers_oauth2.authorizationcode
           - authentik_providers_oauth2.oauth2provider
-          - authentik_providers_oauth2.refreshtoken
           - authentik_providers_oauth2.scopemapping
           - authentik_providers_proxy.proxyprovider
+          - authentik_providers_rac.endpoint
+          - authentik_providers_rac.racpropertymapping
+          - authentik_providers_rac.racprovider
           - authentik_providers_radius.radiusprovider
           - authentik_providers_saml.samlpropertymapping
           - authentik_providers_saml.samlprovider
@@ -17528,14 +18812,10 @@ paths:
           - authentik_stages_user_login.userloginstage
           - authentik_stages_user_logout.userlogoutstage
           - authentik_stages_user_write.userwritestage
-          - authentik_tenants.tenant
+          - authentik_tenants.domain
         description: |-
+          * `authentik_tenants.domain` - Domain
           * `authentik_crypto.certificatekeypair` - Certificate-Key Pair
-          * `authentik_events.event` - Event
-          * `authentik_events.notificationtransport` - Notification Transport
-          * `authentik_events.notification` - Notification
-          * `authentik_events.notificationrule` - Notification Rule
-          * `authentik_events.notificationwebhookmapping` - Webhook Mapping
           * `authentik_flows.flow` - Flow
           * `authentik_flows.flowstagebinding` - Flow Stage Binding
           * `authentik_outposts.dockerserviceconnection` - Docker Service-Connection
@@ -17547,14 +18827,10 @@ paths:
           * `authentik_policies_expression.expressionpolicy` - Expression Policy
           * `authentik_policies_password.passwordpolicy` - Password Policy
           * `authentik_policies_reputation.reputationpolicy` - Reputation Policy
-          * `authentik_policies_reputation.reputation` - Reputation Score
           * `authentik_policies.policybinding` - Policy Binding
           * `authentik_providers_ldap.ldapprovider` - LDAP Provider
           * `authentik_providers_oauth2.scopemapping` - Scope Mapping
           * `authentik_providers_oauth2.oauth2provider` - OAuth2/OpenID Provider
-          * `authentik_providers_oauth2.authorizationcode` - Authorization Code
-          * `authentik_providers_oauth2.accesstoken` - OAuth2 Access Token
-          * `authentik_providers_oauth2.refreshtoken` - OAuth2 Refresh Token
           * `authentik_providers_proxy.proxyprovider` - Proxy Provider
           * `authentik_providers_radius.radiusprovider` - Radius Provider
           * `authentik_providers_saml.samlprovider` - SAML Provider
@@ -17574,7 +18850,7 @@ paths:
           * `authentik_stages_authenticator_duo.duodevice` - Duo Device
           * `authentik_stages_authenticator_sms.authenticatorsmsstage` - SMS Authenticator Setup Stage
           * `authentik_stages_authenticator_sms.smsdevice` - SMS Device
-          * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Stage
+          * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Setup Stage
           * `authentik_stages_authenticator_static.staticdevice` - Static Device
           * `authentik_stages_authenticator_totp.authenticatortotpstage` - TOTP Authenticator Setup Stage
           * `authentik_stages_authenticator_totp.totpdevice` - TOTP Device
@@ -17597,13 +18873,21 @@ paths:
           * `authentik_stages_user_login.userloginstage` - User Login Stage
           * `authentik_stages_user_logout.userlogoutstage` - User Logout Stage
           * `authentik_stages_user_write.userwritestage` - User Write Stage
-          * `authentik_tenants.tenant` - Tenant
+          * `authentik_brands.brand` - Brand
           * `authentik_blueprints.blueprintinstance` - Blueprint Instance
           * `authentik_core.group` - Group
           * `authentik_core.user` - User
           * `authentik_core.application` - Application
           * `authentik_core.token` - Token
           * `authentik_enterprise.license` - License
+          * `authentik_providers_rac.racprovider` - RAC Provider
+          * `authentik_providers_rac.endpoint` - RAC Endpoint
+          * `authentik_providers_rac.racpropertymapping` - RAC Property Mapping
+          * `authentik_events.event` - Event
+          * `authentik_events.notificationtransport` - Notification Transport
+          * `authentik_events.notification` - Notification
+          * `authentik_events.notificationrule` - Notification Rule
+          * `authentik_events.notificationwebhookmapping` - Webhook Mapping
         required: true
       - in: query
         name: object_pk
@@ -18254,6 +19538,7 @@ paths:
           - tr
           - tt
           - udm
+          - ug
           - uk
           - ur
           - uz
@@ -22267,7 +23552,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this Static Authenticator Stage.
+        description: A UUID string identifying this Static Authenticator Setup Stage.
         required: true
       tags:
       - stages
@@ -22301,7 +23586,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this Static Authenticator Stage.
+        description: A UUID string identifying this Static Authenticator Setup Stage.
         required: true
       tags:
       - stages
@@ -22341,7 +23626,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this Static Authenticator Stage.
+        description: A UUID string identifying this Static Authenticator Setup Stage.
         required: true
       tags:
       - stages
@@ -22380,7 +23665,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this Static Authenticator Stage.
+        description: A UUID string identifying this Static Authenticator Setup Stage.
         required: true
       tags:
       - stages
@@ -22411,7 +23696,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: A UUID string identifying this Static Authenticator Stage.
+        description: A UUID string identifying this Static Authenticator Setup Stage.
         required: true
       tags:
       - stages
@@ -26875,9 +28160,41 @@ paths:
       description: UserLoginStage Viewset
       parameters:
       - in: query
+        name: geoip_binding
+        schema:
+          type: string
+          enum:
+          - bind_continent
+          - bind_continent_country
+          - bind_continent_country_city
+          - no_binding
+        description: |-
+          Bind sessions created by this stage to the configured GeoIP location
+
+          * `no_binding` - No Binding
+          * `bind_continent` - Bind Continent
+          * `bind_continent_country` - Bind Continent Country
+          * `bind_continent_country_city` - Bind Continent Country City
+      - in: query
         name: name
         schema:
           type: string
+      - in: query
+        name: network_binding
+        schema:
+          type: string
+          enum:
+          - bind_asn
+          - bind_asn_network
+          - bind_asn_network_ip
+          - no_binding
+        description: |-
+          Bind sessions created by this stage to the configured network
+
+          * `no_binding` - No Binding
+          * `bind_asn` - Bind Asn
+          * `bind_asn_network` - Bind Asn Network
+          * `bind_asn_network_ip` - Bind Asn Network Ip
       - name: ordering
         required: false
         in: query
@@ -27742,6 +29059,504 @@ paths:
               schema:
                 $ref: '#/components/schemas/GenericError'
           description: ''
+  /tenants/domains/:
+    get:
+      operationId: tenants_domains_list
+      description: Domain ViewSet
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - tenants
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDomainList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    post:
+      operationId: tenants_domains_create
+      description: Domain ViewSet
+      tags:
+      - tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /tenants/domains/{id}/:
+    get:
+      operationId: tenants_domains_retrieve
+      description: Domain ViewSet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Domain.
+        required: true
+      tags:
+      - tenants
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    put:
+      operationId: tenants_domains_update
+      description: Domain ViewSet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Domain.
+        required: true
+      tags:
+      - tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    patch:
+      operationId: tenants_domains_partial_update
+      description: Domain ViewSet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Domain.
+        required: true
+      tags:
+      - tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDomainRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    delete:
+      operationId: tenants_domains_destroy
+      description: Domain ViewSet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Domain.
+        required: true
+      tags:
+      - tenants
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /tenants/tenants/:
+    get:
+      operationId: tenants_tenants_list
+      description: Tenant Viewset
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - tenants
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTenantList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    post:
+      operationId: tenants_tenants_create
+      description: Tenant Viewset
+      tags:
+      - tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /tenants/tenants/{tenant_uuid}/:
+    get:
+      operationId: tenants_tenants_retrieve
+      description: Tenant Viewset
+      parameters:
+      - in: path
+        name: tenant_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Tenant.
+        required: true
+      tags:
+      - tenants
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    put:
+      operationId: tenants_tenants_update
+      description: Tenant Viewset
+      parameters:
+      - in: path
+        name: tenant_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Tenant.
+        required: true
+      tags:
+      - tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    patch:
+      operationId: tenants_tenants_partial_update
+      description: Tenant Viewset
+      parameters:
+      - in: path
+        name: tenant_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Tenant.
+        required: true
+      tags:
+      - tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTenantRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+    delete:
+      operationId: tenants_tenants_destroy
+      description: Tenant Viewset
+      parameters:
+      - in: path
+        name: tenant_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Tenant.
+        required: true
+      tags:
+      - tenants
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /tenants/tenants/{tenant_uuid}/create_admin_group/:
+    post:
+      operationId: tenants_tenants_create_admin_group_create
+      description: Create admin group and add user to it.
+      parameters:
+      - in: path
+        name: tenant_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Tenant.
+        required: true
+      tags:
+      - tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantAdminGroupRequestRequest'
+        required: true
+      responses:
+        '204':
+          description: Group created successfully.
+        '400':
+          description: Bad request
+        '404':
+          description: User not found
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
+  /tenants/tenants/{tenant_uuid}/create_recovery_key/:
+    post:
+      operationId: tenants_tenants_create_recovery_key_create
+      description: Create recovery key for user.
+      parameters:
+      - in: path
+        name: tenant_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Tenant.
+        required: true
+      tags:
+      - tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantRecoveryKeyRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantRecoveryKeyResponse'
+          description: ''
+        '400':
+          description: Bad request
+        '404':
+          description: User not found
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericError'
+          description: ''
 components:
   schemas:
     AccessDeniedChallenge:
@@ -27784,10 +29599,10 @@ components:
       - name
     AppEnum:
       enum:
+      - authentik.tenants
       - authentik.admin
       - authentik.api
       - authentik.crypto
-      - authentik.events
       - authentik.flows
       - authentik.outposts
       - authentik.policies.dummy
@@ -27829,16 +29644,19 @@ components:
       - authentik.stages.user_login
       - authentik.stages.user_logout
       - authentik.stages.user_write
-      - authentik.tenants
+      - authentik.brands
       - authentik.blueprints
       - authentik.core
       - authentik.enterprise
+      - authentik.enterprise.audit
+      - authentik.enterprise.providers.rac
+      - authentik.events
       type: string
       description: |-
+        * `authentik.tenants` - authentik Tenants
         * `authentik.admin` - authentik Admin
         * `authentik.api` - authentik API
         * `authentik.crypto` - authentik Crypto
-        * `authentik.events` - authentik Events
         * `authentik.flows` - authentik Flows
         * `authentik.outposts` - authentik Outpost
         * `authentik.policies.dummy` - authentik Policies.Dummy
@@ -27880,10 +29698,13 @@ components:
         * `authentik.stages.user_login` - authentik Stages.User Login
         * `authentik.stages.user_logout` - authentik Stages.User Logout
         * `authentik.stages.user_write` - authentik Stages.User Write
-        * `authentik.tenants` - authentik Tenants
+        * `authentik.brands` - authentik Brands
         * `authentik.blueprints` - authentik Blueprints
         * `authentik.core` - authentik Core
         * `authentik.enterprise` - authentik Enterprise
+        * `authentik.enterprise.audit` - authentik Enterprise.Audit
+        * `authentik.enterprise.providers.rac` - authentik Enterprise.Providers.RAC
+        * `authentik.events` - authentik Events
     AppleChallengeResponseRequest:
       type: object
       description: Pseudo class for plex response
@@ -28029,6 +29850,14 @@ components:
       required:
       - name
       - slug
+    AuthModeEnum:
+      enum:
+      - static
+      - prompt
+      type: string
+      description: |-
+        * `static` - Static
+        * `prompt` - Prompt
     AuthTypeEnum:
       enum:
       - basic
@@ -28199,7 +30028,7 @@ components:
           readOnly: true
         geo_ip:
           type: object
-          description: Get parsed user agent
+          description: Get GeoIP Data
           properties:
             continent:
               type: string
@@ -28221,6 +30050,24 @@ components:
           - long
           nullable: true
           readOnly: true
+        asn:
+          type: object
+          description: Get ASN Data
+          properties:
+            asn:
+              type: integer
+            as_org:
+              type: string
+              nullable: true
+            network:
+              type: string
+              nullable: true
+          required:
+          - as_org
+          - asn
+          - network
+          nullable: true
+          readOnly: true
         user:
           type: integer
         last_ip:
@@ -28235,6 +30082,7 @@ components:
           type: string
           format: date-time
       required:
+      - asn
       - current
       - geo_ip
       - last_ip
@@ -28247,12 +30095,14 @@ components:
       - require_authenticated
       - require_unauthenticated
       - require_superuser
+      - require_outpost
       type: string
       description: |-
         * `none` - None
         * `require_authenticated` - Require Authenticated
         * `require_unauthenticated` - Require Unauthenticated
         * `require_superuser` - Require Superuser
+        * `require_outpost` - Require Outpost
     AuthenticatorAttachmentEnum:
       enum:
       - platform
@@ -29125,9 +30975,7 @@ components:
         path:
           type: string
           default: ''
-        context:
-          type: object
-          additionalProperties: {}
+        context: {}
         last_applied:
           type: string
           format: date-time
@@ -29147,8 +30995,6 @@ components:
             type: string
           readOnly: true
         metadata:
-          type: object
-          additionalProperties: {}
           readOnly: true
         content:
           type: string
@@ -29170,9 +31016,7 @@ components:
         path:
           type: string
           default: ''
-        context:
-          type: object
-          additionalProperties: {}
+        context: {}
         enabled:
           type: boolean
         content:
@@ -29193,6 +31037,111 @@ components:
         * `error` - Error
         * `orphaned` - Orphaned
         * `unknown` - Unknown
+    Brand:
+      type: object
+      description: Brand Serializer
+      properties:
+        brand_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        domain:
+          type: string
+          description: Domain that activates this brand. Can be a superset, i.e. `a.b`
+            for `aa.b` and `ba.b`
+        default:
+          type: boolean
+        branding_title:
+          type: string
+        branding_logo:
+          type: string
+        branding_favicon:
+          type: string
+        flow_authentication:
+          type: string
+          format: uuid
+          nullable: true
+        flow_invalidation:
+          type: string
+          format: uuid
+          nullable: true
+        flow_recovery:
+          type: string
+          format: uuid
+          nullable: true
+        flow_unenrollment:
+          type: string
+          format: uuid
+          nullable: true
+        flow_user_settings:
+          type: string
+          format: uuid
+          nullable: true
+        flow_device_code:
+          type: string
+          format: uuid
+          nullable: true
+        web_certificate:
+          type: string
+          format: uuid
+          nullable: true
+          description: Web Certificate used by the authentik Core webserver.
+        attributes: {}
+      required:
+      - brand_uuid
+      - domain
+    BrandRequest:
+      type: object
+      description: Brand Serializer
+      properties:
+        domain:
+          type: string
+          minLength: 1
+          description: Domain that activates this brand. Can be a superset, i.e. `a.b`
+            for `aa.b` and `ba.b`
+        default:
+          type: boolean
+        branding_title:
+          type: string
+          minLength: 1
+        branding_logo:
+          type: string
+          minLength: 1
+        branding_favicon:
+          type: string
+          minLength: 1
+        flow_authentication:
+          type: string
+          format: uuid
+          nullable: true
+        flow_invalidation:
+          type: string
+          format: uuid
+          nullable: true
+        flow_recovery:
+          type: string
+          format: uuid
+          nullable: true
+        flow_unenrollment:
+          type: string
+          format: uuid
+          nullable: true
+        flow_user_settings:
+          type: string
+          format: uuid
+          nullable: true
+        flow_device_code:
+          type: string
+          format: uuid
+          nullable: true
+        web_certificate:
+          type: string
+          format: uuid
+          nullable: true
+          description: Web Certificate used by the authentik Core webserver.
+        attributes: {}
+      required:
+      - domain
     Cache:
       type: object
       description: Generic cache stats for an object
@@ -29206,6 +31155,7 @@ components:
       enum:
       - can_save_media
       - can_geo_ip
+      - can_asn
       - can_impersonate
       - can_debug
       - is_enterprise
@@ -29213,6 +31163,7 @@ components:
       description: |-
         * `can_save_media` - Can Save Media
         * `can_geo_ip` - Can Geo Ip
+        * `can_asn` - Can Asn
         * `can_impersonate` - Can Impersonate
         * `can_debug` - Can Debug
         * `is_enterprise` - Is Enterprise
@@ -29543,6 +31494,48 @@ components:
       - cache_timeout_reputation
       - capabilities
       - error_reporting
+    ConnectionToken:
+      type: object
+      description: ConnectionToken Serializer
+      properties:
+        pk:
+          type: string
+          format: uuid
+          readOnly: true
+          title: Pbm uuid
+        provider:
+          type: integer
+        provider_obj:
+          allOf:
+          - $ref: '#/components/schemas/RACProvider'
+          readOnly: true
+        endpoint:
+          type: string
+          format: uuid
+          readOnly: true
+        endpoint_obj:
+          allOf:
+          - $ref: '#/components/schemas/Endpoint'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/GroupMember'
+          readOnly: true
+      required:
+      - endpoint
+      - endpoint_obj
+      - pk
+      - provider
+      - provider_obj
+      - user
+    ConnectionTokenRequest:
+      type: object
+      description: ConnectionToken Serializer
+      properties:
+        provider:
+          type: integer
+      required:
+      - provider
     ConsentChallenge:
       type: object
       description: Challenge info for consent screens
@@ -29692,10 +31685,24 @@ components:
         cancel_url:
           type: string
         layout:
-          $ref: '#/components/schemas/LayoutEnum'
+          $ref: '#/components/schemas/ContextualFlowInfoLayoutEnum'
       required:
       - cancel_url
       - layout
+    ContextualFlowInfoLayoutEnum:
+      enum:
+      - stacked
+      - content_left
+      - content_right
+      - sidebar_left
+      - sidebar_right
+      type: string
+      description: |-
+        * `stacked` - STACKED
+        * `content_left` - CONTENT_LEFT
+        * `content_right` - CONTENT_RIGHT
+        * `sidebar_left` - SIDEBAR_LEFT
+        * `sidebar_right` - SIDEBAR_RIGHT
     Coordinate:
       type: object
       description: Coordinates for diagrams
@@ -29709,9 +31716,9 @@ components:
       required:
       - x_cord
       - y_cord
-    CurrentTenant:
+    CurrentBrand:
       type: object
-      description: Partial tenant information for styling
+      description: Partial brand information for styling
       properties:
         matched_domain:
           type: string
@@ -29726,7 +31733,6 @@ components:
           items:
             $ref: '#/components/schemas/FooterLink'
           readOnly: true
-          default: []
         ui_theme:
           allOf:
           - $ref: '#/components/schemas/UiThemeEnum'
@@ -30007,6 +32013,41 @@ components:
       required:
       - name
       - url
+    Domain:
+      type: object
+      description: Domain Serializer
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        domain:
+          type: string
+          maxLength: 253
+        is_primary:
+          type: boolean
+        tenant:
+          type: string
+          format: uuid
+      required:
+      - domain
+      - id
+      - tenant
+    DomainRequest:
+      type: object
+      description: Domain Serializer
+      properties:
+        domain:
+          type: string
+          minLength: 1
+          maxLength: 253
+        is_primary:
+          type: boolean
+        tenant:
+          type: string
+          format: uuid
+      required:
+      - domain
+      - tenant
     DummyChallenge:
       type: object
       description: Dummy challenge
@@ -30367,6 +32408,87 @@ components:
           description: Activate users upon completion of stage.
       required:
       - name
+    Endpoint:
+      type: object
+      description: Endpoint Serializer
+      properties:
+        pk:
+          type: string
+          format: uuid
+          readOnly: true
+          title: Pbm uuid
+        name:
+          type: string
+        provider:
+          type: integer
+        provider_obj:
+          allOf:
+          - $ref: '#/components/schemas/RACProvider'
+          readOnly: true
+        protocol:
+          $ref: '#/components/schemas/ProtocolEnum'
+        host:
+          type: string
+        settings: {}
+        property_mappings:
+          type: array
+          items:
+            type: string
+            format: uuid
+        auth_mode:
+          $ref: '#/components/schemas/AuthModeEnum'
+        launch_url:
+          type: string
+          nullable: true
+          description: |-
+            Build actual launch URL (the provider itself does not have one, just
+            individual endpoints)
+          readOnly: true
+        maximum_connections:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - auth_mode
+      - host
+      - launch_url
+      - name
+      - pk
+      - protocol
+      - provider
+      - provider_obj
+    EndpointRequest:
+      type: object
+      description: Endpoint Serializer
+      properties:
+        name:
+          type: string
+          minLength: 1
+        provider:
+          type: integer
+        protocol:
+          $ref: '#/components/schemas/ProtocolEnum'
+        host:
+          type: string
+          minLength: 1
+        settings: {}
+        property_mappings:
+          type: array
+          items:
+            type: string
+            format: uuid
+        auth_mode:
+          $ref: '#/components/schemas/AuthModeEnum'
+        maximum_connections:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+      - auth_mode
+      - host
+      - name
+      - protocol
+      - provider
     ErrorDetail:
       type: object
       description: Serializer for rest_framework's error messages
@@ -30413,16 +32535,12 @@ components:
           format: uuid
           readOnly: true
           title: Event uuid
-        user:
-          type: object
-          additionalProperties: {}
+        user: {}
         action:
           $ref: '#/components/schemas/EventActions'
         app:
           type: string
-        context:
-          type: object
-          additionalProperties: {}
+        context: {}
         client_ip:
           type: string
           nullable: true
@@ -30433,9 +32551,7 @@ components:
         expires:
           type: string
           format: date-time
-        tenant:
-          type: object
-          additionalProperties: {}
+        brand: {}
       required:
       - action
       - app
@@ -30580,10 +32696,10 @@ components:
           description: |-
             Match events created by selected application. When left empty, all applications are matched.
 
+            * `authentik.tenants` - authentik Tenants
             * `authentik.admin` - authentik Admin
             * `authentik.api` - authentik API
             * `authentik.crypto` - authentik Crypto
-            * `authentik.events` - authentik Events
             * `authentik.flows` - authentik Flows
             * `authentik.outposts` - authentik Outpost
             * `authentik.policies.dummy` - authentik Policies.Dummy
@@ -30625,10 +32741,13 @@ components:
             * `authentik.stages.user_login` - authentik Stages.User Login
             * `authentik.stages.user_logout` - authentik Stages.User Logout
             * `authentik.stages.user_write` - authentik Stages.User Write
-            * `authentik.tenants` - authentik Tenants
+            * `authentik.brands` - authentik Brands
             * `authentik.blueprints` - authentik Blueprints
             * `authentik.core` - authentik Core
             * `authentik.enterprise` - authentik Enterprise
+            * `authentik.enterprise.audit` - authentik Enterprise.Audit
+            * `authentik.enterprise.providers.rac` - authentik Enterprise.Providers.RAC
+            * `authentik.events` - authentik Events
         model:
           allOf:
           - $ref: '#/components/schemas/ModelEnum'
@@ -30636,12 +32755,8 @@ components:
           description: |-
             Match events created by selected model. When left empty, all models are matched. When an app is selected, all the application's models are matched.
 
+            * `authentik_tenants.domain` - Domain
             * `authentik_crypto.certificatekeypair` - Certificate-Key Pair
-            * `authentik_events.event` - Event
-            * `authentik_events.notificationtransport` - Notification Transport
-            * `authentik_events.notification` - Notification
-            * `authentik_events.notificationrule` - Notification Rule
-            * `authentik_events.notificationwebhookmapping` - Webhook Mapping
             * `authentik_flows.flow` - Flow
             * `authentik_flows.flowstagebinding` - Flow Stage Binding
             * `authentik_outposts.dockerserviceconnection` - Docker Service-Connection
@@ -30653,14 +32768,10 @@ components:
             * `authentik_policies_expression.expressionpolicy` - Expression Policy
             * `authentik_policies_password.passwordpolicy` - Password Policy
             * `authentik_policies_reputation.reputationpolicy` - Reputation Policy
-            * `authentik_policies_reputation.reputation` - Reputation Score
             * `authentik_policies.policybinding` - Policy Binding
             * `authentik_providers_ldap.ldapprovider` - LDAP Provider
             * `authentik_providers_oauth2.scopemapping` - Scope Mapping
             * `authentik_providers_oauth2.oauth2provider` - OAuth2/OpenID Provider
-            * `authentik_providers_oauth2.authorizationcode` - Authorization Code
-            * `authentik_providers_oauth2.accesstoken` - OAuth2 Access Token
-            * `authentik_providers_oauth2.refreshtoken` - OAuth2 Refresh Token
             * `authentik_providers_proxy.proxyprovider` - Proxy Provider
             * `authentik_providers_radius.radiusprovider` - Radius Provider
             * `authentik_providers_saml.samlprovider` - SAML Provider
@@ -30680,7 +32791,7 @@ components:
             * `authentik_stages_authenticator_duo.duodevice` - Duo Device
             * `authentik_stages_authenticator_sms.authenticatorsmsstage` - SMS Authenticator Setup Stage
             * `authentik_stages_authenticator_sms.smsdevice` - SMS Device
-            * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Stage
+            * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Setup Stage
             * `authentik_stages_authenticator_static.staticdevice` - Static Device
             * `authentik_stages_authenticator_totp.authenticatortotpstage` - TOTP Authenticator Setup Stage
             * `authentik_stages_authenticator_totp.totpdevice` - TOTP Device
@@ -30703,13 +32814,21 @@ components:
             * `authentik_stages_user_login.userloginstage` - User Login Stage
             * `authentik_stages_user_logout.userlogoutstage` - User Logout Stage
             * `authentik_stages_user_write.userwritestage` - User Write Stage
-            * `authentik_tenants.tenant` - Tenant
+            * `authentik_brands.brand` - Brand
             * `authentik_blueprints.blueprintinstance` - Blueprint Instance
             * `authentik_core.group` - Group
             * `authentik_core.user` - User
             * `authentik_core.application` - Application
             * `authentik_core.token` - Token
             * `authentik_enterprise.license` - License
+            * `authentik_providers_rac.racprovider` - RAC Provider
+            * `authentik_providers_rac.endpoint` - RAC Endpoint
+            * `authentik_providers_rac.racpropertymapping` - RAC Property Mapping
+            * `authentik_events.event` - Event
+            * `authentik_events.notificationtransport` - Notification Transport
+            * `authentik_events.notification` - Notification
+            * `authentik_events.notificationrule` - Notification Rule
+            * `authentik_events.notificationwebhookmapping` - Webhook Mapping
       required:
       - bound_to
       - component
@@ -30776,10 +32895,10 @@ components:
           description: |-
             Match events created by selected application. When left empty, all applications are matched.
 
+            * `authentik.tenants` - authentik Tenants
             * `authentik.admin` - authentik Admin
             * `authentik.api` - authentik API
             * `authentik.crypto` - authentik Crypto
-            * `authentik.events` - authentik Events
             * `authentik.flows` - authentik Flows
             * `authentik.outposts` - authentik Outpost
             * `authentik.policies.dummy` - authentik Policies.Dummy
@@ -30821,10 +32940,13 @@ components:
             * `authentik.stages.user_login` - authentik Stages.User Login
             * `authentik.stages.user_logout` - authentik Stages.User Logout
             * `authentik.stages.user_write` - authentik Stages.User Write
-            * `authentik.tenants` - authentik Tenants
+            * `authentik.brands` - authentik Brands
             * `authentik.blueprints` - authentik Blueprints
             * `authentik.core` - authentik Core
             * `authentik.enterprise` - authentik Enterprise
+            * `authentik.enterprise.audit` - authentik Enterprise.Audit
+            * `authentik.enterprise.providers.rac` - authentik Enterprise.Providers.RAC
+            * `authentik.events` - authentik Events
         model:
           allOf:
           - $ref: '#/components/schemas/ModelEnum'
@@ -30832,12 +32954,8 @@ components:
           description: |-
             Match events created by selected model. When left empty, all models are matched. When an app is selected, all the application's models are matched.
 
+            * `authentik_tenants.domain` - Domain
             * `authentik_crypto.certificatekeypair` - Certificate-Key Pair
-            * `authentik_events.event` - Event
-            * `authentik_events.notificationtransport` - Notification Transport
-            * `authentik_events.notification` - Notification
-            * `authentik_events.notificationrule` - Notification Rule
-            * `authentik_events.notificationwebhookmapping` - Webhook Mapping
             * `authentik_flows.flow` - Flow
             * `authentik_flows.flowstagebinding` - Flow Stage Binding
             * `authentik_outposts.dockerserviceconnection` - Docker Service-Connection
@@ -30849,14 +32967,10 @@ components:
             * `authentik_policies_expression.expressionpolicy` - Expression Policy
             * `authentik_policies_password.passwordpolicy` - Password Policy
             * `authentik_policies_reputation.reputationpolicy` - Reputation Policy
-            * `authentik_policies_reputation.reputation` - Reputation Score
             * `authentik_policies.policybinding` - Policy Binding
             * `authentik_providers_ldap.ldapprovider` - LDAP Provider
             * `authentik_providers_oauth2.scopemapping` - Scope Mapping
             * `authentik_providers_oauth2.oauth2provider` - OAuth2/OpenID Provider
-            * `authentik_providers_oauth2.authorizationcode` - Authorization Code
-            * `authentik_providers_oauth2.accesstoken` - OAuth2 Access Token
-            * `authentik_providers_oauth2.refreshtoken` - OAuth2 Refresh Token
             * `authentik_providers_proxy.proxyprovider` - Proxy Provider
             * `authentik_providers_radius.radiusprovider` - Radius Provider
             * `authentik_providers_saml.samlprovider` - SAML Provider
@@ -30876,7 +32990,7 @@ components:
             * `authentik_stages_authenticator_duo.duodevice` - Duo Device
             * `authentik_stages_authenticator_sms.authenticatorsmsstage` - SMS Authenticator Setup Stage
             * `authentik_stages_authenticator_sms.smsdevice` - SMS Device
-            * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Stage
+            * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Setup Stage
             * `authentik_stages_authenticator_static.staticdevice` - Static Device
             * `authentik_stages_authenticator_totp.authenticatortotpstage` - TOTP Authenticator Setup Stage
             * `authentik_stages_authenticator_totp.totpdevice` - TOTP Device
@@ -30899,30 +33013,34 @@ components:
             * `authentik_stages_user_login.userloginstage` - User Login Stage
             * `authentik_stages_user_logout.userlogoutstage` - User Logout Stage
             * `authentik_stages_user_write.userwritestage` - User Write Stage
-            * `authentik_tenants.tenant` - Tenant
+            * `authentik_brands.brand` - Brand
             * `authentik_blueprints.blueprintinstance` - Blueprint Instance
             * `authentik_core.group` - Group
             * `authentik_core.user` - User
             * `authentik_core.application` - Application
             * `authentik_core.token` - Token
             * `authentik_enterprise.license` - License
+            * `authentik_providers_rac.racprovider` - RAC Provider
+            * `authentik_providers_rac.endpoint` - RAC Endpoint
+            * `authentik_providers_rac.racpropertymapping` - RAC Property Mapping
+            * `authentik_events.event` - Event
+            * `authentik_events.notificationtransport` - Notification Transport
+            * `authentik_events.notification` - Notification
+            * `authentik_events.notificationrule` - Notification Rule
+            * `authentik_events.notificationwebhookmapping` - Webhook Mapping
       required:
       - name
     EventRequest:
       type: object
       description: Event Serializer
       properties:
-        user:
-          type: object
-          additionalProperties: {}
+        user: {}
         action:
           $ref: '#/components/schemas/EventActions'
         app:
           type: string
           minLength: 1
-        context:
-          type: object
-          additionalProperties: {}
+        context: {}
         client_ip:
           type: string
           nullable: true
@@ -30930,9 +33048,7 @@ components:
         expires:
           type: string
           format: date-time
-        tenant:
-          type: object
-          additionalProperties: {}
+        brand: {}
       required:
       - action
       - app
@@ -31231,7 +33347,7 @@ components:
           description: Get export URL for flow
           readOnly: true
         layout:
-          $ref: '#/components/schemas/LayoutEnum'
+          $ref: '#/components/schemas/FlowLayoutEnum'
         denied_action:
           allOf:
           - $ref: '#/components/schemas/DeniedActionEnum'
@@ -31251,6 +33367,7 @@ components:
             * `require_authenticated` - Require Authenticated
             * `require_unauthenticated` - Require Unauthenticated
             * `require_superuser` - Require Superuser
+            * `require_outpost` - Require Outpost
       required:
       - background
       - cache_count
@@ -31418,6 +33535,20 @@ components:
       - next_planned_stage
       - plan_context
       - session_id
+    FlowLayoutEnum:
+      enum:
+      - stacked
+      - content_left
+      - content_right
+      - sidebar_left
+      - sidebar_right
+      type: string
+      description: |-
+        * `stacked` - Stacked
+        * `content_left` - Content Left
+        * `content_right` - Content Right
+        * `sidebar_left` - Sidebar Left
+        * `sidebar_right` - Sidebar Right
     FlowRequest:
       type: object
       description: Flow Serializer
@@ -31455,7 +33586,7 @@ components:
           description: Enable compatibility mode, increases compatibility with password
             managers on mobile devices.
         layout:
-          $ref: '#/components/schemas/LayoutEnum'
+          $ref: '#/components/schemas/FlowLayoutEnum'
         denied_action:
           allOf:
           - $ref: '#/components/schemas/DeniedActionEnum'
@@ -31475,6 +33606,7 @@ components:
             * `require_authenticated` - Require Authenticated
             * `require_unauthenticated` - Require Unauthenticated
             * `require_superuser` - Require Superuser
+            * `require_outpost` - Require Outpost
       required:
       - designation
       - name
@@ -31533,7 +33665,7 @@ components:
           description: Get export URL for flow
           readOnly: true
         layout:
-          $ref: '#/components/schemas/LayoutEnum'
+          $ref: '#/components/schemas/FlowLayoutEnum'
         denied_action:
           allOf:
           - $ref: '#/components/schemas/DeniedActionEnum'
@@ -31589,7 +33721,7 @@ components:
           description: Enable compatibility mode, increases compatibility with password
             managers on mobile devices.
         layout:
-          $ref: '#/components/schemas/LayoutEnum'
+          $ref: '#/components/schemas/FlowLayoutEnum'
         denied_action:
           allOf:
           - $ref: '#/components/schemas/DeniedActionEnum'
@@ -31713,6 +33845,18 @@ components:
           type: string
       required:
       - detail
+    GeoipBindingEnum:
+      enum:
+      - no_binding
+      - bind_continent
+      - bind_continent_country
+      - bind_continent_country_city
+      type: string
+      description: |-
+        * `no_binding` - No Binding
+        * `bind_continent` - Bind Continent
+        * `bind_continent_country` - Bind Continent Country
+        * `bind_continent_country_city` - Bind Continent Country City
     Group:
       type: object
       description: Group Serializer
@@ -32281,8 +34425,6 @@ components:
           description: Return internal model name
           readOnly: true
         kubeconfig:
-          type: object
-          additionalProperties: {}
           description: Paste your kubeconfig here. authentik will automatically use
             the currently selected context.
         verify_ssl:
@@ -32307,8 +34449,6 @@ components:
           description: If enabled, use the local connection. Required Docker socket/Kubernetes
             Integration
         kubeconfig:
-          type: object
-          additionalProperties: {}
           description: Paste your kubeconfig here. authentik will automatically use
             the currently selected context.
         verify_ssl:
@@ -32968,25 +35108,11 @@ components:
         tasks:
           type: array
           items:
-            $ref: '#/components/schemas/Task'
+            $ref: '#/components/schemas/SystemTask'
           readOnly: true
       required:
       - is_running
       - tasks
-    LayoutEnum:
-      enum:
-      - stacked
-      - content_left
-      - content_right
-      - sidebar_left
-      - sidebar_right
-      type: string
-      description: |-
-        * `stacked` - STACKED
-        * `content_left` - CONTENT_LEFT
-        * `content_right` - CONTENT_RIGHT
-        * `sidebar_left` - SIDEBAR_LEFT
-        * `sidebar_right` - SIDEBAR_RIGHT
     License:
       type: object
       description: License Serializer
@@ -33143,12 +35269,8 @@ components:
       - name
     ModelEnum:
       enum:
+      - authentik_tenants.domain
       - authentik_crypto.certificatekeypair
-      - authentik_events.event
-      - authentik_events.notificationtransport
-      - authentik_events.notification
-      - authentik_events.notificationrule
-      - authentik_events.notificationwebhookmapping
       - authentik_flows.flow
       - authentik_flows.flowstagebinding
       - authentik_outposts.dockerserviceconnection
@@ -33160,14 +35282,10 @@ components:
       - authentik_policies_expression.expressionpolicy
       - authentik_policies_password.passwordpolicy
       - authentik_policies_reputation.reputationpolicy
-      - authentik_policies_reputation.reputation
       - authentik_policies.policybinding
       - authentik_providers_ldap.ldapprovider
       - authentik_providers_oauth2.scopemapping
       - authentik_providers_oauth2.oauth2provider
-      - authentik_providers_oauth2.authorizationcode
-      - authentik_providers_oauth2.accesstoken
-      - authentik_providers_oauth2.refreshtoken
       - authentik_providers_proxy.proxyprovider
       - authentik_providers_radius.radiusprovider
       - authentik_providers_saml.samlprovider
@@ -33210,21 +35328,25 @@ components:
       - authentik_stages_user_login.userloginstage
       - authentik_stages_user_logout.userlogoutstage
       - authentik_stages_user_write.userwritestage
-      - authentik_tenants.tenant
+      - authentik_brands.brand
       - authentik_blueprints.blueprintinstance
       - authentik_core.group
       - authentik_core.user
       - authentik_core.application
       - authentik_core.token
       - authentik_enterprise.license
+      - authentik_providers_rac.racprovider
+      - authentik_providers_rac.endpoint
+      - authentik_providers_rac.racpropertymapping
+      - authentik_events.event
+      - authentik_events.notificationtransport
+      - authentik_events.notification
+      - authentik_events.notificationrule
+      - authentik_events.notificationwebhookmapping
       type: string
       description: |-
+        * `authentik_tenants.domain` - Domain
         * `authentik_crypto.certificatekeypair` - Certificate-Key Pair
-        * `authentik_events.event` - Event
-        * `authentik_events.notificationtransport` - Notification Transport
-        * `authentik_events.notification` - Notification
-        * `authentik_events.notificationrule` - Notification Rule
-        * `authentik_events.notificationwebhookmapping` - Webhook Mapping
         * `authentik_flows.flow` - Flow
         * `authentik_flows.flowstagebinding` - Flow Stage Binding
         * `authentik_outposts.dockerserviceconnection` - Docker Service-Connection
@@ -33236,14 +35358,10 @@ components:
         * `authentik_policies_expression.expressionpolicy` - Expression Policy
         * `authentik_policies_password.passwordpolicy` - Password Policy
         * `authentik_policies_reputation.reputationpolicy` - Reputation Policy
-        * `authentik_policies_reputation.reputation` - Reputation Score
         * `authentik_policies.policybinding` - Policy Binding
         * `authentik_providers_ldap.ldapprovider` - LDAP Provider
         * `authentik_providers_oauth2.scopemapping` - Scope Mapping
         * `authentik_providers_oauth2.oauth2provider` - OAuth2/OpenID Provider
-        * `authentik_providers_oauth2.authorizationcode` - Authorization Code
-        * `authentik_providers_oauth2.accesstoken` - OAuth2 Access Token
-        * `authentik_providers_oauth2.refreshtoken` - OAuth2 Refresh Token
         * `authentik_providers_proxy.proxyprovider` - Proxy Provider
         * `authentik_providers_radius.radiusprovider` - Radius Provider
         * `authentik_providers_saml.samlprovider` - SAML Provider
@@ -33263,7 +35381,7 @@ components:
         * `authentik_stages_authenticator_duo.duodevice` - Duo Device
         * `authentik_stages_authenticator_sms.authenticatorsmsstage` - SMS Authenticator Setup Stage
         * `authentik_stages_authenticator_sms.smsdevice` - SMS Device
-        * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Stage
+        * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Setup Stage
         * `authentik_stages_authenticator_static.staticdevice` - Static Device
         * `authentik_stages_authenticator_totp.authenticatortotpstage` - TOTP Authenticator Setup Stage
         * `authentik_stages_authenticator_totp.totpdevice` - TOTP Device
@@ -33286,13 +35404,21 @@ components:
         * `authentik_stages_user_login.userloginstage` - User Login Stage
         * `authentik_stages_user_logout.userlogoutstage` - User Logout Stage
         * `authentik_stages_user_write.userwritestage` - User Write Stage
-        * `authentik_tenants.tenant` - Tenant
+        * `authentik_brands.brand` - Brand
         * `authentik_blueprints.blueprintinstance` - Blueprint Instance
         * `authentik_core.group` - Group
         * `authentik_core.user` - User
         * `authentik_core.application` - Application
         * `authentik_core.token` - Token
         * `authentik_enterprise.license` - License
+        * `authentik_providers_rac.racprovider` - RAC Provider
+        * `authentik_providers_rac.endpoint` - RAC Endpoint
+        * `authentik_providers_rac.racpropertymapping` - RAC Property Mapping
+        * `authentik_events.event` - Event
+        * `authentik_events.notificationtransport` - Notification Transport
+        * `authentik_events.notification` - Notification
+        * `authentik_events.notificationrule` - Notification Rule
+        * `authentik_events.notificationwebhookmapping` - Webhook Mapping
     NameIdPolicyEnum:
       enum:
       - urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
@@ -33307,6 +35433,18 @@ components:
         * `urn:oasis:names:tc:SAML:2.0:nameid-format:X509SubjectName` - X509
         * `urn:oasis:names:tc:SAML:2.0:nameid-format:WindowsDomainQualifiedName` - Windows
         * `urn:oasis:names:tc:SAML:2.0:nameid-format:transient` - Transient
+    NetworkBindingEnum:
+      enum:
+      - no_binding
+      - bind_asn
+      - bind_asn_network
+      - bind_asn_network_ip
+      type: string
+      description: |-
+        * `no_binding` - No Binding
+        * `bind_asn` - Bind Asn
+        * `bind_asn_network` - Bind Asn Network
+        * `bind_asn_network_ip` - Bind Asn Network Ip
     NotConfiguredActionEnum:
       enum:
       - skip
@@ -33972,9 +36110,7 @@ components:
           type: string
         oidc_jwks_url:
           type: string
-        oidc_jwks:
-          type: object
-          additionalProperties: {}
+        oidc_jwks: {}
       required:
       - callback_url
       - component
@@ -34071,9 +36207,7 @@ components:
           type: string
         oidc_jwks_url:
           type: string
-        oidc_jwks:
-          type: object
-          additionalProperties: {}
+        oidc_jwks: {}
       required:
       - consumer_key
       - consumer_secret
@@ -34271,11 +36405,13 @@ components:
       - proxy
       - ldap
       - radius
+      - rac
       type: string
       description: |-
         * `proxy` - Proxy
         * `ldap` - Ldap
         * `radius` - Radius
+        * `rac` - Rac
     PaginatedApplicationList:
       type: object
       properties:
@@ -34384,6 +36520,18 @@ components:
       required:
       - pagination
       - results
+    PaginatedBrandList:
+      type: object
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Brand'
+      required:
+      - pagination
+      - results
     PaginatedCaptchaStageList:
       type: object
       properties:
@@ -34405,6 +36553,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CertificateKeyPair'
+      required:
+      - pagination
+      - results
+    PaginatedConnectionTokenList:
+      type: object
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectionToken'
       required:
       - pagination
       - results
@@ -34441,6 +36601,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DockerServiceConnection'
+      required:
+      - pagination
+      - results
+    PaginatedDomainList:
+      type: object
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Domain'
       required:
       - pagination
       - results
@@ -34489,6 +36661,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EmailStage'
+      required:
+      - pagination
+      - results
+    PaginatedEndpointList:
+      type: object
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Endpoint'
       required:
       - pagination
       - results
@@ -34960,6 +37144,30 @@ components:
       required:
       - pagination
       - results
+    PaginatedRACPropertyMappingList:
+      type: object
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RACPropertyMapping'
+      required:
+      - pagination
+      - results
+    PaginatedRACProviderList:
+      type: object
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RACProvider'
+      required:
+      - pagination
+      - results
     PaginatedRadiusOutpostConfigList:
       type: object
       properties:
@@ -35161,6 +37369,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StaticDevice'
+      required:
+      - pagination
+      - results
+    PaginatedSystemTaskList:
+      type: object
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SystemTask'
       required:
       - pagination
       - results
@@ -35962,13 +38182,61 @@ components:
         path:
           type: string
           default: ''
-        context:
-          type: object
-          additionalProperties: {}
+        context: {}
         enabled:
           type: boolean
         content:
           type: string
+    PatchedBrandRequest:
+      type: object
+      description: Brand Serializer
+      properties:
+        domain:
+          type: string
+          minLength: 1
+          description: Domain that activates this brand. Can be a superset, i.e. `a.b`
+            for `aa.b` and `ba.b`
+        default:
+          type: boolean
+        branding_title:
+          type: string
+          minLength: 1
+        branding_logo:
+          type: string
+          minLength: 1
+        branding_favicon:
+          type: string
+          minLength: 1
+        flow_authentication:
+          type: string
+          format: uuid
+          nullable: true
+        flow_invalidation:
+          type: string
+          format: uuid
+          nullable: true
+        flow_recovery:
+          type: string
+          format: uuid
+          nullable: true
+        flow_unenrollment:
+          type: string
+          format: uuid
+          nullable: true
+        flow_user_settings:
+          type: string
+          format: uuid
+          nullable: true
+        flow_device_code:
+          type: string
+          format: uuid
+          nullable: true
+        web_certificate:
+          type: string
+          format: uuid
+          nullable: true
+          description: Web Certificate used by the authentik Core webserver.
+        attributes: {}
     PatchedCaptchaStageRequest:
       type: object
       description: CaptchaStage Serializer
@@ -36012,6 +38280,12 @@ components:
           writeOnly: true
           description: Optional Private Key. If this is set, you can use this keypair
             for encryption.
+    PatchedConnectionTokenRequest:
+      type: object
+      description: ConnectionToken Serializer
+      properties:
+        provider:
+          type: integer
     PatchedConsentStageRequest:
       type: object
       description: ConsentStage Serializer
@@ -36072,6 +38346,19 @@ components:
           nullable: true
           description: Certificate/Key used for authentication. Can be left empty
             for no authentication.
+    PatchedDomainRequest:
+      type: object
+      description: Domain Serializer
+      properties:
+        domain:
+          type: string
+          minLength: 1
+          maxLength: 253
+        is_primary:
+          type: boolean
+        tenant:
+          type: string
+          format: uuid
     PatchedDummyPolicyRequest:
       type: object
       description: Dummy Policy Serializer
@@ -36169,6 +38456,32 @@ components:
         activate_user_on_success:
           type: boolean
           description: Activate users upon completion of stage.
+    PatchedEndpointRequest:
+      type: object
+      description: Endpoint Serializer
+      properties:
+        name:
+          type: string
+          minLength: 1
+        provider:
+          type: integer
+        protocol:
+          $ref: '#/components/schemas/ProtocolEnum'
+        host:
+          type: string
+          minLength: 1
+        settings: {}
+        property_mappings:
+          type: array
+          items:
+            type: string
+            format: uuid
+        auth_mode:
+          $ref: '#/components/schemas/AuthModeEnum'
+        maximum_connections:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
     PatchedEventMatcherPolicyRequest:
       type: object
       description: Event Matcher Policy Serializer
@@ -36227,10 +38540,10 @@ components:
           description: |-
             Match events created by selected application. When left empty, all applications are matched.
 
+            * `authentik.tenants` - authentik Tenants
             * `authentik.admin` - authentik Admin
             * `authentik.api` - authentik API
             * `authentik.crypto` - authentik Crypto
-            * `authentik.events` - authentik Events
             * `authentik.flows` - authentik Flows
             * `authentik.outposts` - authentik Outpost
             * `authentik.policies.dummy` - authentik Policies.Dummy
@@ -36272,10 +38585,13 @@ components:
             * `authentik.stages.user_login` - authentik Stages.User Login
             * `authentik.stages.user_logout` - authentik Stages.User Logout
             * `authentik.stages.user_write` - authentik Stages.User Write
-            * `authentik.tenants` - authentik Tenants
+            * `authentik.brands` - authentik Brands
             * `authentik.blueprints` - authentik Blueprints
             * `authentik.core` - authentik Core
             * `authentik.enterprise` - authentik Enterprise
+            * `authentik.enterprise.audit` - authentik Enterprise.Audit
+            * `authentik.enterprise.providers.rac` - authentik Enterprise.Providers.RAC
+            * `authentik.events` - authentik Events
         model:
           allOf:
           - $ref: '#/components/schemas/ModelEnum'
@@ -36283,12 +38599,8 @@ components:
           description: |-
             Match events created by selected model. When left empty, all models are matched. When an app is selected, all the application's models are matched.
 
+            * `authentik_tenants.domain` - Domain
             * `authentik_crypto.certificatekeypair` - Certificate-Key Pair
-            * `authentik_events.event` - Event
-            * `authentik_events.notificationtransport` - Notification Transport
-            * `authentik_events.notification` - Notification
-            * `authentik_events.notificationrule` - Notification Rule
-            * `authentik_events.notificationwebhookmapping` - Webhook Mapping
             * `authentik_flows.flow` - Flow
             * `authentik_flows.flowstagebinding` - Flow Stage Binding
             * `authentik_outposts.dockerserviceconnection` - Docker Service-Connection
@@ -36300,14 +38612,10 @@ components:
             * `authentik_policies_expression.expressionpolicy` - Expression Policy
             * `authentik_policies_password.passwordpolicy` - Password Policy
             * `authentik_policies_reputation.reputationpolicy` - Reputation Policy
-            * `authentik_policies_reputation.reputation` - Reputation Score
             * `authentik_policies.policybinding` - Policy Binding
             * `authentik_providers_ldap.ldapprovider` - LDAP Provider
             * `authentik_providers_oauth2.scopemapping` - Scope Mapping
             * `authentik_providers_oauth2.oauth2provider` - OAuth2/OpenID Provider
-            * `authentik_providers_oauth2.authorizationcode` - Authorization Code
-            * `authentik_providers_oauth2.accesstoken` - OAuth2 Access Token
-            * `authentik_providers_oauth2.refreshtoken` - OAuth2 Refresh Token
             * `authentik_providers_proxy.proxyprovider` - Proxy Provider
             * `authentik_providers_radius.radiusprovider` - Radius Provider
             * `authentik_providers_saml.samlprovider` - SAML Provider
@@ -36327,7 +38635,7 @@ components:
             * `authentik_stages_authenticator_duo.duodevice` - Duo Device
             * `authentik_stages_authenticator_sms.authenticatorsmsstage` - SMS Authenticator Setup Stage
             * `authentik_stages_authenticator_sms.smsdevice` - SMS Device
-            * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Stage
+            * `authentik_stages_authenticator_static.authenticatorstaticstage` - Static Authenticator Setup Stage
             * `authentik_stages_authenticator_static.staticdevice` - Static Device
             * `authentik_stages_authenticator_totp.authenticatortotpstage` - TOTP Authenticator Setup Stage
             * `authentik_stages_authenticator_totp.totpdevice` - TOTP Device
@@ -36350,28 +38658,32 @@ components:
             * `authentik_stages_user_login.userloginstage` - User Login Stage
             * `authentik_stages_user_logout.userlogoutstage` - User Logout Stage
             * `authentik_stages_user_write.userwritestage` - User Write Stage
-            * `authentik_tenants.tenant` - Tenant
+            * `authentik_brands.brand` - Brand
             * `authentik_blueprints.blueprintinstance` - Blueprint Instance
             * `authentik_core.group` - Group
             * `authentik_core.user` - User
             * `authentik_core.application` - Application
             * `authentik_core.token` - Token
             * `authentik_enterprise.license` - License
+            * `authentik_providers_rac.racprovider` - RAC Provider
+            * `authentik_providers_rac.endpoint` - RAC Endpoint
+            * `authentik_providers_rac.racpropertymapping` - RAC Property Mapping
+            * `authentik_events.event` - Event
+            * `authentik_events.notificationtransport` - Notification Transport
+            * `authentik_events.notification` - Notification
+            * `authentik_events.notificationrule` - Notification Rule
+            * `authentik_events.notificationwebhookmapping` - Webhook Mapping
     PatchedEventRequest:
       type: object
       description: Event Serializer
       properties:
-        user:
-          type: object
-          additionalProperties: {}
+        user: {}
         action:
           $ref: '#/components/schemas/EventActions'
         app:
           type: string
           minLength: 1
-        context:
-          type: object
-          additionalProperties: {}
+        context: {}
         client_ip:
           type: string
           nullable: true
@@ -36379,9 +38691,7 @@ components:
         expires:
           type: string
           format: date-time
-        tenant:
-          type: object
-          additionalProperties: {}
+        brand: {}
     PatchedExpressionPolicyRequest:
       type: object
       description: Group Membership Policy Serializer
@@ -36433,7 +38743,7 @@ components:
           description: Enable compatibility mode, increases compatibility with password
             managers on mobile devices.
         layout:
-          $ref: '#/components/schemas/LayoutEnum'
+          $ref: '#/components/schemas/FlowLayoutEnum'
         denied_action:
           allOf:
           - $ref: '#/components/schemas/DeniedActionEnum'
@@ -36453,6 +38763,7 @@ components:
             * `require_authenticated` - Require Authenticated
             * `require_unauthenticated` - Require Unauthenticated
             * `require_superuser` - Require Superuser
+            * `require_outpost` - Require Outpost
     PatchedFlowStageBindingRequest:
       type: object
       description: FlowStageBinding Serializer
@@ -36623,8 +38934,6 @@ components:
           description: If enabled, use the local connection. Required Docker socket/Kubernetes
             Integration
         kubeconfig:
-          type: object
-          additionalProperties: {}
           description: Paste your kubeconfig here. authentik will automatically use
             the currently selected context.
         verify_ssl:
@@ -37085,9 +39394,7 @@ components:
           type: string
         oidc_jwks_url:
           type: string
-        oidc_jwks:
-          type: object
-          additionalProperties: {}
+        oidc_jwks: {}
     PatchedOutpostRequest:
       type: object
       description: Outpost Serializer
@@ -37492,6 +39799,58 @@ components:
           minLength: 1
           description: 'Tokens not valid on or after current time + this value (Format:
             hours=1;minutes=2;seconds=3).'
+    PatchedRACPropertyMappingRequest:
+      type: object
+      description: RACPropertyMapping Serializer
+      properties:
+        managed:
+          type: string
+          nullable: true
+          minLength: 1
+          title: Managed by authentik
+          description: Objects that are managed by authentik. These objects are created
+            and updated automatically. This flag only indicates that an object can
+            be overwritten by migrations. You can still modify the objects via the
+            API, but expect changes to be overwritten in a later update.
+        name:
+          type: string
+          minLength: 1
+        expression:
+          type: string
+        static_settings:
+          type: object
+          additionalProperties: {}
+    PatchedRACProviderRequest:
+      type: object
+      description: RACProvider Serializer
+      properties:
+        name:
+          type: string
+          minLength: 1
+        authentication_flow:
+          type: string
+          format: uuid
+          nullable: true
+          description: Flow used for authentication when the associated application
+            is accessed by an un-authenticated user.
+        authorization_flow:
+          type: string
+          format: uuid
+          description: Flow used when authorizing this provider.
+        property_mappings:
+          type: array
+          items:
+            type: string
+            format: uuid
+        settings: {}
+        connection_expiry:
+          type: string
+          minLength: 1
+          description: 'Determines how long a session lasts. Default of 0 means that
+            the sessions lasts until the browser is closed. (Format: hours=-1;minutes=-2;seconds=-3)'
+        delete_token_on_disconnect:
+          type: boolean
+          description: When set to true, connection tokens will be deleted upon disconnect.
     PatchedRadiusProviderRequest:
       type: object
       description: RadiusProvider Serializer
@@ -37860,6 +40219,37 @@ components:
           type: string
           description: Description shown to the user when consenting. If left empty,
             the user won't be informed.
+    PatchedSettingsRequest:
+      type: object
+      description: Settings Serializer
+      properties:
+        avatars:
+          type: string
+          minLength: 1
+          description: Configure how authentik should show avatars for users.
+        default_user_change_name:
+          type: boolean
+          description: Enable the ability for users to change their name.
+        default_user_change_email:
+          type: boolean
+          description: Enable the ability for users to change their email address.
+        default_user_change_username:
+          type: boolean
+          description: Enable the ability for users to change their username.
+        event_retention:
+          type: string
+          minLength: 1
+          description: 'Events will be deleted after this duration.(Format: weeks=3;days=2;hours=3,seconds=2).'
+        footer_links:
+          description: The option configures the footer links on the flow executor
+            pages.
+        gdpr_compliance:
+          type: boolean
+          description: When enabled, all the events caused by a user will be deleted
+            upon the user's deletion.
+        impersonation:
+          type: boolean
+          description: Globally enable/disable impersonation.
     PatchedStaticDeviceRequest:
       type: object
       description: Serializer for static authenticator devices
@@ -37882,58 +40272,15 @@ components:
       type: object
       description: Tenant Serializer
       properties:
-        domain:
+        schema_name:
           type: string
           minLength: 1
-          description: Domain that activates this tenant. Can be a superset, i.e.
-            `a.b` for `aa.b` and `ba.b`
-        default:
+          maxLength: 63
+        name:
+          type: string
+          minLength: 1
+        ready:
           type: boolean
-        branding_title:
-          type: string
-          minLength: 1
-        branding_logo:
-          type: string
-          minLength: 1
-        branding_favicon:
-          type: string
-          minLength: 1
-        flow_authentication:
-          type: string
-          format: uuid
-          nullable: true
-        flow_invalidation:
-          type: string
-          format: uuid
-          nullable: true
-        flow_recovery:
-          type: string
-          format: uuid
-          nullable: true
-        flow_unenrollment:
-          type: string
-          format: uuid
-          nullable: true
-        flow_user_settings:
-          type: string
-          format: uuid
-          nullable: true
-        flow_device_code:
-          type: string
-          format: uuid
-          nullable: true
-        event_retention:
-          type: string
-          minLength: 1
-          description: 'Events will be deleted after this duration.(Format: weeks=3;days=2;hours=3,seconds=2).'
-        web_certificate:
-          type: string
-          format: uuid
-          nullable: true
-          description: Web Certificate used by the authentik Core webserver.
-        attributes:
-          type: object
-          additionalProperties: {}
     PatchedTokenRequest:
       type: object
       description: Token Serializer
@@ -37999,6 +40346,26 @@ components:
           description: 'Offset the session will be extended by when the user picks
             the remember me option. Default of 0 means that the remember me option
             will not be shown. (Format: hours=-1;minutes=-2;seconds=-3)'
+        network_binding:
+          allOf:
+          - $ref: '#/components/schemas/NetworkBindingEnum'
+          description: |-
+            Bind sessions created by this stage to the configured network
+
+            * `no_binding` - No Binding
+            * `bind_asn` - Bind Asn
+            * `bind_asn_network` - Bind Asn Network
+            * `bind_asn_network_ip` - Bind Asn Network Ip
+        geoip_binding:
+          allOf:
+          - $ref: '#/components/schemas/GeoipBindingEnum'
+          description: |-
+            Bind sessions created by this stage to the configured GeoIP location
+
+            * `no_binding` - No Binding
+            * `bind_continent` - Bind Continent
+            * `bind_continent_country` - Bind Continent Country
+            * `bind_continent_country_city` - Bind Continent Country City
     PatchedUserLogoutStageRequest:
       type: object
       description: UserLogoutStage Serializer
@@ -38909,6 +41276,16 @@ components:
       required:
       - result
       - successful
+    ProtocolEnum:
+      enum:
+      - rdp
+      - vnc
+      - ssh
+      type: string
+      description: |-
+        * `rdp` - Rdp
+        * `vnc` - Vnc
+        * `ssh` - Ssh
     Provider:
       type: object
       description: Provider Serializer
@@ -38991,6 +41368,7 @@ components:
       - authentik_providers_ldap.ldapprovider
       - authentik_providers_oauth2.oauth2provider
       - authentik_providers_proxy.proxyprovider
+      - authentik_providers_rac.racprovider
       - authentik_providers_radius.radiusprovider
       - authentik_providers_saml.samlprovider
       - authentik_providers_scim.scimprovider
@@ -38999,6 +41377,7 @@ components:
         * `authentik_providers_ldap.ldapprovider` - authentik_providers_ldap.ldapprovider
         * `authentik_providers_oauth2.oauth2provider` - authentik_providers_oauth2.oauth2provider
         * `authentik_providers_proxy.proxyprovider` - authentik_providers_proxy.proxyprovider
+        * `authentik_providers_rac.racprovider` - authentik_providers_rac.racprovider
         * `authentik_providers_radius.radiusprovider` - authentik_providers_radius.radiusprovider
         * `authentik_providers_saml.samlprovider` - authentik_providers_saml.samlprovider
         * `authentik_providers_scim.scimprovider` - authentik_providers_scim.scimprovider
@@ -39030,13 +41409,13 @@ components:
     ProviderTypeEnum:
       enum:
       - apple
+      - openidconnect
       - azuread
       - discord
       - facebook
       - github
       - google
       - mailcow
-      - openidconnect
       - okta
       - patreon
       - reddit
@@ -39045,13 +41424,13 @@ components:
       type: string
       description: |-
         * `apple` - Apple
+        * `openidconnect` - OpenID Connect
         * `azuread` - Azure AD
         * `discord` - Discord
         * `facebook` - Facebook
         * `github` - GitHub
         * `google` - Google
         * `mailcow` - Mailcow
-        * `openidconnect` - OpenID Connect
         * `okta` - Okta
         * `patreon` - Patreon
         * `reddit` - Reddit
@@ -39406,6 +41785,195 @@ components:
       - authorization_flow
       - external_host
       - name
+    RACPropertyMapping:
+      type: object
+      description: RACPropertyMapping Serializer
+      properties:
+        pk:
+          type: string
+          format: uuid
+          readOnly: true
+          title: Pm uuid
+        managed:
+          type: string
+          nullable: true
+          title: Managed by authentik
+          description: Objects that are managed by authentik. These objects are created
+            and updated automatically. This flag only indicates that an object can
+            be overwritten by migrations. You can still modify the objects via the
+            API, but expect changes to be overwritten in a later update.
+        name:
+          type: string
+        expression:
+          type: string
+        component:
+          type: string
+          description: Get object's component so that we know how to edit the object
+          readOnly: true
+        verbose_name:
+          type: string
+          description: Return object's verbose_name
+          readOnly: true
+        verbose_name_plural:
+          type: string
+          description: Return object's plural verbose_name
+          readOnly: true
+        meta_model_name:
+          type: string
+          description: Return internal model name
+          readOnly: true
+        static_settings:
+          type: object
+          additionalProperties: {}
+      required:
+      - component
+      - meta_model_name
+      - name
+      - pk
+      - static_settings
+      - verbose_name
+      - verbose_name_plural
+    RACPropertyMappingRequest:
+      type: object
+      description: RACPropertyMapping Serializer
+      properties:
+        managed:
+          type: string
+          nullable: true
+          minLength: 1
+          title: Managed by authentik
+          description: Objects that are managed by authentik. These objects are created
+            and updated automatically. This flag only indicates that an object can
+            be overwritten by migrations. You can still modify the objects via the
+            API, but expect changes to be overwritten in a later update.
+        name:
+          type: string
+          minLength: 1
+        expression:
+          type: string
+        static_settings:
+          type: object
+          additionalProperties: {}
+      required:
+      - name
+      - static_settings
+    RACProvider:
+      type: object
+      description: RACProvider Serializer
+      properties:
+        pk:
+          type: integer
+          readOnly: true
+          title: ID
+        name:
+          type: string
+        authentication_flow:
+          type: string
+          format: uuid
+          nullable: true
+          description: Flow used for authentication when the associated application
+            is accessed by an un-authenticated user.
+        authorization_flow:
+          type: string
+          format: uuid
+          description: Flow used when authorizing this provider.
+        property_mappings:
+          type: array
+          items:
+            type: string
+            format: uuid
+        component:
+          type: string
+          description: Get object component so that we know how to edit the object
+          readOnly: true
+        assigned_application_slug:
+          type: string
+          description: Internal application name, used in URLs.
+          readOnly: true
+        assigned_application_name:
+          type: string
+          description: Application's display Name.
+          readOnly: true
+        assigned_backchannel_application_slug:
+          type: string
+          description: Internal application name, used in URLs.
+          readOnly: true
+        assigned_backchannel_application_name:
+          type: string
+          description: Application's display Name.
+          readOnly: true
+        verbose_name:
+          type: string
+          description: Return object's verbose_name
+          readOnly: true
+        verbose_name_plural:
+          type: string
+          description: Return object's plural verbose_name
+          readOnly: true
+        meta_model_name:
+          type: string
+          description: Return internal model name
+          readOnly: true
+        settings: {}
+        outpost_set:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        connection_expiry:
+          type: string
+          description: 'Determines how long a session lasts. Default of 0 means that
+            the sessions lasts until the browser is closed. (Format: hours=-1;minutes=-2;seconds=-3)'
+        delete_token_on_disconnect:
+          type: boolean
+          description: When set to true, connection tokens will be deleted upon disconnect.
+      required:
+      - assigned_application_name
+      - assigned_application_slug
+      - assigned_backchannel_application_name
+      - assigned_backchannel_application_slug
+      - authorization_flow
+      - component
+      - meta_model_name
+      - name
+      - outpost_set
+      - pk
+      - verbose_name
+      - verbose_name_plural
+    RACProviderRequest:
+      type: object
+      description: RACProvider Serializer
+      properties:
+        name:
+          type: string
+          minLength: 1
+        authentication_flow:
+          type: string
+          format: uuid
+          nullable: true
+          description: Flow used for authentication when the associated application
+            is accessed by an un-authenticated user.
+        authorization_flow:
+          type: string
+          format: uuid
+          description: Flow used when authorizing this provider.
+        property_mappings:
+          type: array
+          items:
+            type: string
+            format: uuid
+        settings: {}
+        connection_expiry:
+          type: string
+          minLength: 1
+          description: 'Determines how long a session lasts. Default of 0 means that
+            the sessions lasts until the browser is closed. (Format: hours=-1;minutes=-2;seconds=-3)'
+        delete_token_on_disconnect:
+          type: boolean
+          description: When set to true, connection tokens will be deleted upon disconnect.
+      required:
+      - authorization_flow
+      - name
     RadiusOutpostConfig:
       type: object
       description: RadiusProvider Serializer
@@ -39606,9 +42174,8 @@ components:
           type: string
         ip:
           type: string
-        ip_geo_data:
-          type: object
-          additionalProperties: {}
+        ip_geo_data: {}
+        ip_asn_data: {}
         score:
           type: integer
           maximum: 9223372036854775807
@@ -40565,6 +43132,21 @@ components:
       - name
       - token
       - url
+    SCIMSyncStatus:
+      type: object
+      description: SCIM Provider sync status
+      properties:
+        is_running:
+          type: boolean
+          readOnly: true
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SystemTask'
+          readOnly: true
+      required:
+      - is_running
+      - tasks
     SMSDevice:
       type: object
       description: Serializer for sms authenticator devices
@@ -40773,6 +43355,66 @@ components:
           $ref: '#/components/schemas/UserSelf'
       required:
       - user
+    Settings:
+      type: object
+      description: Settings Serializer
+      properties:
+        avatars:
+          type: string
+          description: Configure how authentik should show avatars for users.
+        default_user_change_name:
+          type: boolean
+          description: Enable the ability for users to change their name.
+        default_user_change_email:
+          type: boolean
+          description: Enable the ability for users to change their email address.
+        default_user_change_username:
+          type: boolean
+          description: Enable the ability for users to change their username.
+        event_retention:
+          type: string
+          description: 'Events will be deleted after this duration.(Format: weeks=3;days=2;hours=3,seconds=2).'
+        footer_links:
+          description: The option configures the footer links on the flow executor
+            pages.
+        gdpr_compliance:
+          type: boolean
+          description: When enabled, all the events caused by a user will be deleted
+            upon the user's deletion.
+        impersonation:
+          type: boolean
+          description: Globally enable/disable impersonation.
+    SettingsRequest:
+      type: object
+      description: Settings Serializer
+      properties:
+        avatars:
+          type: string
+          minLength: 1
+          description: Configure how authentik should show avatars for users.
+        default_user_change_name:
+          type: boolean
+          description: Enable the ability for users to change their name.
+        default_user_change_email:
+          type: boolean
+          description: Enable the ability for users to change their email address.
+        default_user_change_username:
+          type: boolean
+          description: Enable the ability for users to change their username.
+        event_retention:
+          type: string
+          minLength: 1
+          description: 'Events will be deleted after this duration.(Format: weeks=3;days=2;hours=3,seconds=2).'
+        footer_links:
+          description: The option configures the footer links on the flow executor
+            pages.
+        gdpr_compliance:
+          type: boolean
+          description: When enabled, all the events caused by a user will be deleted
+            upon the user's deletion.
+        impersonation:
+          type: boolean
+          description: Globally enable/disable impersonation.
     SeverityEnum:
       enum:
       - notice
@@ -40956,7 +43598,7 @@ components:
       properties:
         name:
           type: string
-        slug:
+        verbose_name:
           type: string
         urls_customizable:
           type: boolean
@@ -40992,8 +43634,8 @@ components:
       - oidc_well_known_url
       - profile_url
       - request_token_url
-      - slug
       - urls_customizable
+      - verbose_name
     SpBindingEnum:
       enum:
       - redirect
@@ -41197,27 +43839,90 @@ components:
           - python_version
           - uname
           readOnly: true
-        tenant:
+        brand:
           type: string
-          description: Currently active tenant
+          description: Currently active brand
           readOnly: true
         server_time:
           type: string
           format: date-time
           description: Current server time
           readOnly: true
+        embedded_outpost_disabled:
+          type: boolean
+          description: Whether the embedded outpost is disabled
+          readOnly: true
         embedded_outpost_host:
           type: string
           description: Get the FQDN configured on the embedded outpost
           readOnly: true
       required:
+      - brand
+      - embedded_outpost_disabled
       - embedded_outpost_host
       - http_headers
       - http_host
       - http_is_secure
       - runtime
       - server_time
-      - tenant
+    SystemTask:
+      type: object
+      description: Serialize TaskInfo and TaskResult
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        full_name:
+          type: string
+          description: Get full name with UID
+          readOnly: true
+        uid:
+          type: string
+        description:
+          type: string
+        start_timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        finish_timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        duration:
+          type: number
+          format: double
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/SystemTaskStatusEnum'
+        messages:
+          type: array
+          items:
+            type: string
+      required:
+      - description
+      - duration
+      - finish_timestamp
+      - full_name
+      - messages
+      - name
+      - start_timestamp
+      - status
+      - uuid
+    SystemTaskStatusEnum:
+      enum:
+      - unknown
+      - successful
+      - warning
+      - error
+      type: string
+      description: |-
+        * `unknown` - UNKNOWN
+        * `successful` - SUCCESSFUL
+        * `warning` - WARNING
+        * `error` - ERROR
     TOTPDevice:
       type: object
       description: Serializer for totp authenticator devices
@@ -41244,45 +43949,6 @@ components:
           maxLength: 64
       required:
       - name
-    Task:
-      type: object
-      description: Serialize TaskInfo and TaskResult
-      properties:
-        task_name:
-          type: string
-        task_description:
-          type: string
-        task_finish_timestamp:
-          type: string
-          format: date-time
-        task_duration:
-          type: integer
-          description: Get the duration a task took to run
-          readOnly: true
-        status:
-          $ref: '#/components/schemas/TaskStatusEnum'
-        messages:
-          type: array
-          items: {}
-      required:
-      - messages
-      - status
-      - task_description
-      - task_duration
-      - task_finish_timestamp
-      - task_name
-    TaskStatusEnum:
-      enum:
-      - SUCCESSFUL
-      - WARNING
-      - ERROR
-      - UNKNOWN
-      type: string
-      description: |-
-        * `SUCCESSFUL` - SUCCESSFUL
-        * `WARNING` - WARNING
-        * `ERROR` - ERROR
-        * `UNKNOWN` - UNKNOWN
     Tenant:
       type: object
       description: Tenant Serializer
@@ -41291,114 +43957,66 @@ components:
           type: string
           format: uuid
           readOnly: true
-        domain:
+        schema_name:
           type: string
-          description: Domain that activates this tenant. Can be a superset, i.e.
-            `a.b` for `aa.b` and `ba.b`
-        default:
+          maxLength: 63
+        name:
+          type: string
+        ready:
           type: boolean
-        branding_title:
-          type: string
-        branding_logo:
-          type: string
-        branding_favicon:
-          type: string
-        flow_authentication:
-          type: string
-          format: uuid
-          nullable: true
-        flow_invalidation:
-          type: string
-          format: uuid
-          nullable: true
-        flow_recovery:
-          type: string
-          format: uuid
-          nullable: true
-        flow_unenrollment:
-          type: string
-          format: uuid
-          nullable: true
-        flow_user_settings:
-          type: string
-          format: uuid
-          nullable: true
-        flow_device_code:
-          type: string
-          format: uuid
-          nullable: true
-        event_retention:
-          type: string
-          description: 'Events will be deleted after this duration.(Format: weeks=3;days=2;hours=3,seconds=2).'
-        web_certificate:
-          type: string
-          format: uuid
-          nullable: true
-          description: Web Certificate used by the authentik Core webserver.
-        attributes:
-          type: object
-          additionalProperties: {}
       required:
-      - domain
+      - name
+      - schema_name
       - tenant_uuid
+    TenantAdminGroupRequestRequest:
+      type: object
+      description: Tenant admin group creation request serializer
+      properties:
+        user:
+          type: string
+          minLength: 1
+      required:
+      - user
+    TenantRecoveryKeyRequestRequest:
+      type: object
+      description: Tenant recovery key creation request serializer
+      properties:
+        user:
+          type: string
+          minLength: 1
+        duration_days:
+          type: integer
+      required:
+      - duration_days
+      - user
+    TenantRecoveryKeyResponse:
+      type: object
+      description: Tenant recovery key creation response serializer
+      properties:
+        expiry:
+          type: string
+          format: date-time
+        url:
+          type: string
+      required:
+      - expiry
+      - url
     TenantRequest:
       type: object
       description: Tenant Serializer
       properties:
-        domain:
+        schema_name:
           type: string
           minLength: 1
-          description: Domain that activates this tenant. Can be a superset, i.e.
-            `a.b` for `aa.b` and `ba.b`
-        default:
+          maxLength: 63
+        name:
+          type: string
+          minLength: 1
+        ready:
           type: boolean
-        branding_title:
-          type: string
-          minLength: 1
-        branding_logo:
-          type: string
-          minLength: 1
-        branding_favicon:
-          type: string
-          minLength: 1
-        flow_authentication:
-          type: string
-          format: uuid
-          nullable: true
-        flow_invalidation:
-          type: string
-          format: uuid
-          nullable: true
-        flow_recovery:
-          type: string
-          format: uuid
-          nullable: true
-        flow_unenrollment:
-          type: string
-          format: uuid
-          nullable: true
-        flow_user_settings:
-          type: string
-          format: uuid
-          nullable: true
-        flow_device_code:
-          type: string
-          format: uuid
-          nullable: true
-        event_retention:
-          type: string
-          minLength: 1
-          description: 'Events will be deleted after this duration.(Format: weeks=3;days=2;hours=3,seconds=2).'
-        web_certificate:
-          type: string
-          format: uuid
-          nullable: true
-          description: Web Certificate used by the authentik Core webserver.
-        attributes:
-          type: object
-          additionalProperties: {}
       required:
-      - domain
+      - name
+      - schema_name
     Token:
       type: object
       description: Token Serializer
@@ -41562,6 +44180,9 @@ components:
           type: string
         model_name:
           type: string
+        requires_enterprise:
+          type: boolean
+          default: false
       required:
       - component
       - description
@@ -41599,16 +44220,16 @@ components:
       - pk
     UsedByActionEnum:
       enum:
-      - CASCADE
-      - CASCADE_MANY
-      - SET_NULL
-      - SET_DEFAULT
+      - cascade
+      - cascade_many
+      - set_null
+      - set_default
       type: string
       description: |-
-        * `CASCADE` - CASCADE
-        * `CASCADE_MANY` - CASCADE_MANY
-        * `SET_NULL` - SET_NULL
-        * `SET_DEFAULT` - SET_DEFAULT
+        * `cascade` - CASCADE
+        * `cascade_many` - CASCADE_MANY
+        * `set_null` - SET_NULL
+        * `set_default` - SET_DEFAULT
     User:
       type: object
       description: User Serializer
@@ -41652,6 +44273,7 @@ components:
           maxLength: 254
         avatar:
           type: string
+          description: User's avatar, either a http/https URL or a data URI
           readOnly: true
         attributes:
           type: object
@@ -41745,6 +44367,8 @@ components:
         expires:
           type: string
           format: date-time
+        expiring:
+          type: boolean
         user:
           $ref: '#/components/schemas/User'
         application:
@@ -41961,6 +44585,26 @@ components:
           description: 'Offset the session will be extended by when the user picks
             the remember me option. Default of 0 means that the remember me option
             will not be shown. (Format: hours=-1;minutes=-2;seconds=-3)'
+        network_binding:
+          allOf:
+          - $ref: '#/components/schemas/NetworkBindingEnum'
+          description: |-
+            Bind sessions created by this stage to the configured network
+
+            * `no_binding` - No Binding
+            * `bind_asn` - Bind Asn
+            * `bind_asn_network` - Bind Asn Network
+            * `bind_asn_network_ip` - Bind Asn Network Ip
+        geoip_binding:
+          allOf:
+          - $ref: '#/components/schemas/GeoipBindingEnum'
+          description: |-
+            Bind sessions created by this stage to the configured GeoIP location
+
+            * `no_binding` - No Binding
+            * `bind_continent` - Bind Continent
+            * `bind_continent_country` - Bind Continent Country
+            * `bind_continent_country_city` - Bind Continent Country City
       required:
       - component
       - meta_model_name
@@ -41993,6 +44637,26 @@ components:
           description: 'Offset the session will be extended by when the user picks
             the remember me option. Default of 0 means that the remember me option
             will not be shown. (Format: hours=-1;minutes=-2;seconds=-3)'
+        network_binding:
+          allOf:
+          - $ref: '#/components/schemas/NetworkBindingEnum'
+          description: |-
+            Bind sessions created by this stage to the configured network
+
+            * `no_binding` - No Binding
+            * `bind_asn` - Bind Asn
+            * `bind_asn_network` - Bind Asn Network
+            * `bind_asn_network_ip` - Bind Asn Network Ip
+        geoip_binding:
+          allOf:
+          - $ref: '#/components/schemas/GeoipBindingEnum'
+          description: |-
+            Bind sessions created by this stage to the configured GeoIP location
+
+            * `no_binding` - No Binding
+            * `bind_continent` - Bind Continent
+            * `bind_continent_country` - Bind Continent Country
+            * `bind_continent_country_city` - Bind Continent Country City
       required:
       - name
     UserLogoutStage:
@@ -42283,6 +44947,7 @@ components:
           maxLength: 254
         avatar:
           type: string
+          description: User's avatar, either a http/https URL or a data URI
           readOnly: true
         uid:
           type: string
@@ -42290,7 +44955,7 @@ components:
         settings:
           type: object
           additionalProperties: {}
-          description: Get user settings with tenant and group settings applied
+          description: Get user settings with brand and group settings applied
           readOnly: true
         type:
           $ref: '#/components/schemas/UserTypeEnum'
@@ -42579,6 +45244,7 @@ components:
       - $ref: '#/components/schemas/LDAPProviderRequest'
       - $ref: '#/components/schemas/OAuth2ProviderRequest'
       - $ref: '#/components/schemas/ProxyProviderRequest'
+      - $ref: '#/components/schemas/RACProviderRequest'
       - $ref: '#/components/schemas/RadiusProviderRequest'
       - $ref: '#/components/schemas/SAMLProviderRequest'
       - $ref: '#/components/schemas/SCIMProviderRequest'
@@ -42588,6 +45254,7 @@ components:
           authentik_providers_ldap.ldapprovider: '#/components/schemas/LDAPProviderRequest'
           authentik_providers_oauth2.oauth2provider: '#/components/schemas/OAuth2ProviderRequest'
           authentik_providers_proxy.proxyprovider: '#/components/schemas/ProxyProviderRequest'
+          authentik_providers_rac.racprovider: '#/components/schemas/RACProviderRequest'
           authentik_providers_radius.radiusprovider: '#/components/schemas/RadiusProviderRequest'
           authentik_providers_saml.samlprovider: '#/components/schemas/SAMLProviderRequest'
           authentik_providers_scim.scimprovider: '#/components/schemas/SCIMProviderRequest'

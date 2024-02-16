@@ -1,4 +1,5 @@
 """install ID"""
+
 from functools import lru_cache
 from uuid import uuid4
 
@@ -17,7 +18,7 @@ def get_install_id() -> str:
     if settings.TEST:
         return str(uuid4())
     with connection.cursor() as cursor:
-        cursor.execute("SELECT id FROM authentik_install_id LIMIT 1;")
+        cursor.execute("SELECT id FROM public.authentik_install_id LIMIT 1;")
         return cursor.fetchone()[0]
 
 
@@ -37,5 +38,5 @@ def get_install_id_raw():
         sslkey=CONFIG.get("postgresql.sslkey"),
     )
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM authentik_install_id LIMIT 1;")
+    cursor.execute("SELECT id FROM public.authentik_install_id LIMIT 1;")
     return cursor.fetchone()[0]

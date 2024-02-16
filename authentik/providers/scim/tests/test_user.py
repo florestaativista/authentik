@@ -1,8 +1,8 @@
 """SCIM User tests"""
+
 from json import loads
 
 from django.test import TestCase
-from guardian.shortcuts import get_anonymous_user
 from jsonschema import validate
 from requests_mock import Mocker
 
@@ -11,6 +11,7 @@ from authentik.core.models import Application, Group, User
 from authentik.lib.generators import generate_id
 from authentik.providers.scim.models import SCIMMapping, SCIMProvider
 from authentik.providers.scim.tasks import scim_sync
+from authentik.tenants.models import Tenant
 
 
 class SCIMUserTests(TestCase):
@@ -20,7 +21,8 @@ class SCIMUserTests(TestCase):
     def setUp(self) -> None:
         # Delete all users and groups as the mocked HTTP responses only return one ID
         # which will cause errors with multiple users
-        User.objects.all().exclude(pk=get_anonymous_user().pk).delete()
+        Tenant.objects.update(avatars="none")
+        User.objects.all().exclude_anonymous().delete()
         Group.objects.all().delete()
         self.provider: SCIMProvider = SCIMProvider.objects.create(
             name=generate_id(),
@@ -57,7 +59,7 @@ class SCIMUserTests(TestCase):
         uid = generate_id()
         user = User.objects.create(
             username=uid,
-            name=uid,
+            name=f"{uid} {uid}",
             email=f"{uid}@goauthentik.io",
         )
         self.assertEqual(mock.call_count, 2)
@@ -77,11 +79,11 @@ class SCIMUserTests(TestCase):
                 ],
                 "externalId": user.uid,
                 "name": {
-                    "familyName": "",
-                    "formatted": uid,
+                    "familyName": uid,
+                    "formatted": f"{uid} {uid}",
                     "givenName": uid,
                 },
-                "displayName": uid,
+                "displayName": f"{uid} {uid}",
                 "userName": uid,
             },
         )
@@ -110,7 +112,7 @@ class SCIMUserTests(TestCase):
         uid = generate_id()
         user = User.objects.create(
             username=uid,
-            name=uid,
+            name=f"{uid} {uid}",
             email=f"{uid}@goauthentik.io",
         )
         self.assertEqual(mock.call_count, 2)
@@ -131,11 +133,11 @@ class SCIMUserTests(TestCase):
                         "value": f"{uid}@goauthentik.io",
                     }
                 ],
-                "displayName": uid,
+                "displayName": f"{uid} {uid}",
                 "externalId": user.uid,
                 "name": {
-                    "familyName": "",
-                    "formatted": uid,
+                    "familyName": uid,
+                    "formatted": f"{uid} {uid}",
                     "givenName": uid,
                 },
                 "userName": uid,
@@ -166,7 +168,7 @@ class SCIMUserTests(TestCase):
         uid = generate_id()
         user = User.objects.create(
             username=uid,
-            name=uid,
+            name=f"{uid} {uid}",
             email=f"{uid}@goauthentik.io",
         )
         self.assertEqual(mock.call_count, 2)
@@ -186,11 +188,11 @@ class SCIMUserTests(TestCase):
                 ],
                 "externalId": user.uid,
                 "name": {
-                    "familyName": "",
-                    "formatted": uid,
+                    "familyName": uid,
+                    "formatted": f"{uid} {uid}",
                     "givenName": uid,
                 },
-                "displayName": uid,
+                "displayName": f"{uid} {uid}",
                 "userName": uid,
             },
         )
@@ -230,7 +232,7 @@ class SCIMUserTests(TestCase):
         )
         user = User.objects.create(
             username=uid,
-            name=uid,
+            name=f"{uid} {uid}",
             email=f"{uid}@goauthentik.io",
         )
 
@@ -254,11 +256,11 @@ class SCIMUserTests(TestCase):
                 ],
                 "externalId": user.uid,
                 "name": {
-                    "familyName": "",
-                    "formatted": uid,
+                    "familyName": uid,
+                    "formatted": f"{uid} {uid}",
                     "givenName": uid,
                 },
-                "displayName": uid,
+                "displayName": f"{uid} {uid}",
                 "userName": uid,
             },
         )

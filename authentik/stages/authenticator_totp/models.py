@@ -1,4 +1,5 @@
 """OTP Time-based models"""
+
 import time
 from base64 import b32encode
 from binascii import unhexlify
@@ -22,8 +23,8 @@ from authentik.stages.authenticator.util import hex_validator, random_hex
 class TOTPDigits(models.TextChoices):
     """OTP Time Digits"""
 
-    SIX = 6, _("6 digits, widely compatible")
-    EIGHT = 8, _("8 digits, not compatible with apps like Google Authenticator")
+    SIX = "6", _("6 digits, widely compatible")
+    EIGHT = "8", _("8 digits, not compatible with apps like Google Authenticator")
 
 
 class AuthenticatorTOTPStage(ConfigurableStage, FriendlyNamedStage, Stage):

@@ -1,4 +1,5 @@
 """used_by mixin"""
+
 from enum import Enum
 from inspect import getmembers
 
@@ -31,7 +32,7 @@ class UsedBySerializer(PassiveSerializer):
     model_name = CharField()
     pk = CharField()
     name = CharField()
-    action = ChoiceField(choices=[(x.name, x.name) for x in DeleteAction])
+    action = ChoiceField(choices=[(x.value, x.name) for x in DeleteAction])
 
 
 def get_delete_action(manager: Manager) -> str:

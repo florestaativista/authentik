@@ -1,4 +1,5 @@
 """Identification stage logic"""
+
 from dataclasses import asdict
 from random import SystemRandom
 from time import sleep
@@ -26,8 +27,8 @@ from authentik.flows.models import FlowDesignation
 from authentik.flows.planner import PLAN_CONTEXT_PENDING_USER
 from authentik.flows.stage import PLAN_CONTEXT_PENDING_USER_IDENTIFIER, ChallengeStageView
 from authentik.flows.views.executor import SESSION_KEY_APPLICATION_PRE, SESSION_KEY_GET
-from authentik.lib.utils.http import get_client_ip
 from authentik.lib.utils.urls import reverse_with_qs
+from authentik.root.middleware import ClientIPMiddleware
 from authentik.sources.oauth.types.apple import AppleLoginChallenge
 from authentik.sources.plex.models import PlexAuthenticationChallenge
 from authentik.stages.identification.models import IdentificationStage
@@ -103,7 +104,7 @@ class IdentificationChallengeResponse(ChallengeResponse):
             self.stage.logger.info(
                 "invalid_login",
                 identifier=uid_field,
-                client_ip=get_client_ip(self.stage.request),
+                client_ip=ClientIPMiddleware.get_client_ip(self.stage.request),
                 action="invalid_identifier",
                 context={
                     "stage": sanitize_item(self.stage),
@@ -122,7 +123,7 @@ class IdentificationChallengeResponse(ChallengeResponse):
             if not current_stage.show_matched_user:
                 self.stage.executor.plan.context[PLAN_CONTEXT_PENDING_USER_IDENTIFIER] = uid_field
             # when `pretend` is enabled, continue regardless
-            if current_stage.pretend_user_exists:
+            if current_stage.pretend_user_exists and not current_stage.password_stage:
                 return attrs
             raise ValidationError("Failed to authenticate.")
         self.pre_user = pre_user
@@ -245,7 +246,7 @@ class IdentificationStageView(ChallengeStageView):
         self.executor.plan.context[PLAN_CONTEXT_PENDING_USER] = response.pre_user
         current_stage: IdentificationStage = self.executor.current_stage
         if not current_stage.show_matched_user:
-            self.executor.plan.context[
-                PLAN_CONTEXT_PENDING_USER_IDENTIFIER
-            ] = response.validated_data.get("uid_field")
+            self.executor.plan.context[PLAN_CONTEXT_PENDING_USER_IDENTIFIER] = (
+                response.validated_data.get("uid_field")
+            )
         return self.executor.stage_ok()

@@ -1,4 +1,5 @@
 """authentik core models"""
+
 from datetime import timedelta
 from hashlib import sha256
 from typing import Any, Optional, Self
@@ -14,6 +15,7 @@ from django.http import HttpRequest
 from django.utils.functional import SimpleLazyObject, cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
+from guardian.conf import settings
 from guardian.mixins import GuardianUserMixin
 from model_utils.managers import InheritanceManager
 from rest_framework.serializers import Serializer
@@ -30,7 +32,6 @@ from authentik.lib.models import (
     DomainlessFormattedURLValidator,
     SerializerModel,
 )
-from authentik.lib.utils.http import get_client_ip
 from authentik.policies.models import PolicyBindingModel
 from authentik.root.install_id import get_install_id
 
@@ -48,7 +49,14 @@ USER_PATH_SYSTEM_PREFIX = "goauthentik.io"
 USER_PATH_SERVICE_ACCOUNT = USER_PATH_SYSTEM_PREFIX + "/service-accounts"
 
 
-options.DEFAULT_NAMES = options.DEFAULT_NAMES + ("authentik_used_by_shadows",)
+options.DEFAULT_NAMES = options.DEFAULT_NAMES + (
+    # used_by API that allows models to specify if they shadow an object
+    # for example the proxy provider which is built on top of an oauth provider
+    "authentik_used_by_shadows",
+    # List fields for which changes are not logged (due to them having dedicated objects)
+    # for example user's password and last_login
+    "authentik_signals_ignored_fields",
+)
 
 
 def default_token_duration():
@@ -163,12 +171,28 @@ class Group(SerializerModel):
         verbose_name_plural = _("Groups")
 
 
+class UserQuerySet(models.QuerySet):
+    """User queryset"""
+
+    def exclude_anonymous(self):
+        """Exclude anonymous user"""
+        return self.exclude(**{User.USERNAME_FIELD: settings.ANONYMOUS_USER_NAME})
+
+
 class UserManager(DjangoUserManager):
     """User manager that doesn't assign is_superuser and is_staff"""
+
+    def get_queryset(self):
+        """Create special user queryset"""
+        return UserQuerySet(self.model, using=self._db)
 
     def create_user(self, username, email=None, password=None, **extra_fields):
         """User manager that doesn't assign is_superuser and is_staff"""
         return self._create_user(username, email, password, **extra_fields)
+
+    def exclude_anonymous(self) -> QuerySet:
+        """Exclude anonymous user"""
+        return self.get_queryset().exclude_anonymous()
 
 
 class User(SerializerModel, GuardianUserMixin, AbstractUser):
@@ -202,8 +226,8 @@ class User(SerializerModel, GuardianUserMixin, AbstractUser):
         """Get a dictionary containing the attributes from all groups the user belongs to,
         including the users attributes"""
         final_attributes = {}
-        if request and hasattr(request, "tenant"):
-            always_merger.merge(final_attributes, request.tenant.attributes)
+        if request and hasattr(request, "brand"):
+            always_merger.merge(final_attributes, request.brand.attributes)
         for group in self.all_groups().order_by("name"):
             always_merger.merge(final_attributes, group.attributes)
         always_merger.merge(final_attributes, self.attributes)
@@ -262,7 +286,7 @@ class User(SerializerModel, GuardianUserMixin, AbstractUser):
         except Exception as exc:
             LOGGER.warning("Failed to get default locale", exc=exc)
         if request:
-            return request.tenant.locale
+            return request.brand.locale
         return ""
 
     @property
@@ -278,6 +302,16 @@ class User(SerializerModel, GuardianUserMixin, AbstractUser):
             ("impersonate", _("Can impersonate other users")),
             ("assign_user_permissions", _("Can assign permissions to users")),
             ("unassign_user_permissions", _("Can unassign permissions from users")),
+            ("preview_user", _("Can preview user data sent to providers")),
+            ("view_user_applications", _("View applications the user has access to")),
+        ]
+        authentik_signals_ignored_fields = [
+            # Logged by the events `password_set`
+            # the `password_set` action/signal doesn't currently convey which user
+            # initiated the password change, so for now we'll log two actions
+            # ("password", "password_change_date"),
+            # Logged by `login`
+            ("last_login",),
         ]
 
 
@@ -748,12 +782,14 @@ class AuthenticatedSession(ExpiringModel):
     @staticmethod
     def from_request(request: HttpRequest, user: User) -> Optional["AuthenticatedSession"]:
         """Create a new session from a http request"""
+        from authentik.root.middleware import ClientIPMiddleware
+
         if not hasattr(request, "session") or not request.session.session_key:
             return None
         return AuthenticatedSession(
             session_key=request.session.session_key,
             user=user,
-            last_ip=get_client_ip(request),
+            last_ip=ClientIPMiddleware.get_client_ip(request),
             last_user_agent=request.META.get("HTTP_USER_AGENT", ""),
             expires=request.session.get_expiry_date(),
         )

@@ -1,4 +1,5 @@
 """Flow models"""
+
 from base64 import b64decode, b64encode
 from pickle import dumps, loads  # nosec
 from typing import TYPE_CHECKING, Optional
@@ -31,6 +32,7 @@ class FlowAuthenticationRequirement(models.TextChoices):
     REQUIRE_AUTHENTICATED = "require_authenticated"
     REQUIRE_UNAUTHENTICATED = "require_unauthenticated"
     REQUIRE_SUPERUSER = "require_superuser"
+    REQUIRE_OUTPOST = "require_outpost"
 
 
 class NotConfiguredAction(models.TextChoices):

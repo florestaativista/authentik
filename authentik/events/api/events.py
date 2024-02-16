@@ -1,11 +1,13 @@
 """Events API Views"""
+
 from datetime import timedelta
 from json import loads
 
 import django_filters
 from django.db.models.aggregates import Count
 from django.db.models.fields.json import KeyTextTransform, KeyTransform
-from django.db.models.functions import ExtractDay
+from django.db.models.functions import ExtractDay, ExtractHour
+from django.db.models.query_utils import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from guardian.shortcuts import get_objects_for_user
@@ -35,7 +37,7 @@ class EventSerializer(ModelSerializer):
             "client_ip",
             "created",
             "expires",
-            "tenant",
+            "brand",
         ]
 
 
@@ -76,10 +78,10 @@ class EventsFilter(django_filters.FilterSet):
         field_name="action",
         lookup_expr="icontains",
     )
-    tenant_name = django_filters.CharFilter(
-        field_name="tenant",
+    brand_name = django_filters.CharFilter(
+        field_name="brand",
         lookup_expr="name",
-        label="Tenant name",
+        label="Brand name",
     )
 
     def filter_context_model_pk(self, queryset, name, value):
@@ -87,7 +89,12 @@ class EventsFilter(django_filters.FilterSet):
         we need to remove the dashes that a client may send. We can't use a
         UUIDField for this, as some models might not have a UUID PK"""
         value = str(value).replace("-", "")
-        return queryset.filter(context__model__pk=value)
+        query = Q(context__model__pk=value)
+        try:
+            query |= Q(context__model__pk=int(value))
+        except ValueError:
+            pass
+        return queryset.filter(query)
 
     class Meta:
         model = Event
@@ -149,7 +156,15 @@ class EventViewSet(ModelViewSet):
         return Response(EventTopPerUserSerializer(instance=events, many=True).data)
 
     @extend_schema(
-        methods=["GET"],
+        responses={200: CoordinateSerializer(many=True)},
+    )
+    @action(detail=False, methods=["GET"], pagination_class=None)
+    def volume(self, request: Request) -> Response:
+        """Get event volume for specified filters and timeframe"""
+        queryset = self.filter_queryset(self.get_queryset())
+        return Response(queryset.get_events_per(timedelta(days=7), ExtractHour, 7 * 3))
+
+    @extend_schema(
         responses={200: CoordinateSerializer(many=True)},
         filters=[],
         parameters=[

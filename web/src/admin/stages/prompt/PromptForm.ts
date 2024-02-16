@@ -28,7 +28,7 @@ class PreviewStageHost implements StageHost {
     challenge = undefined;
     flowSlug = undefined;
     loading = false;
-    tenant = undefined;
+    brand = undefined;
     async submit(payload: unknown): Promise<boolean> {
         this.promptForm.previewResult = payload;
         return false;
@@ -90,11 +90,9 @@ export class PromptForm extends ModelForm<Prompt, string> {
     }
 
     getSuccessMessage(): string {
-        if (this.instance) {
-            return msg("Successfully updated prompt.");
-        } else {
-            return msg("Successfully created prompt.");
-        }
+        return this.instance
+            ? msg("Successfully updated prompt.")
+            : msg("Successfully created prompt.");
     }
 
     static get styles(): CSSResult[] {

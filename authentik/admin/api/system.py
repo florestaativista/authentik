@@ -1,4 +1,5 @@
 """authentik administration overview"""
+
 import platform
 from datetime import datetime
 from sys import version as python_version
@@ -13,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from authentik.core.api.utils import PassiveSerializer
+from authentik.lib.config import CONFIG
 from authentik.lib.utils.reflection import get_env
 from authentik.outposts.apps import MANAGED_OUTPOST
 from authentik.outposts.models import Outpost
@@ -37,8 +39,9 @@ class SystemInfoSerializer(PassiveSerializer):
     http_host = SerializerMethodField()
     http_is_secure = SerializerMethodField()
     runtime = SerializerMethodField()
-    tenant = SerializerMethodField()
+    brand = SerializerMethodField()
     server_time = SerializerMethodField()
+    embedded_outpost_disabled = SerializerMethodField()
     embedded_outpost_host = SerializerMethodField()
 
     def get_http_headers(self, request: Request) -> dict[str, str]:
@@ -69,13 +72,17 @@ class SystemInfoSerializer(PassiveSerializer):
             "uname": " ".join(platform.uname()),
         }
 
-    def get_tenant(self, request: Request) -> str:
-        """Currently active tenant"""
-        return str(request._request.tenant)
+    def get_brand(self, request: Request) -> str:
+        """Currently active brand"""
+        return str(request._request.brand)
 
     def get_server_time(self, request: Request) -> datetime:
         """Current server time"""
         return now()
+
+    def get_embedded_outpost_disabled(self, request: Request) -> bool:
+        """Whether the embedded outpost is disabled"""
+        return CONFIG.get_bool("outposts.disable_embedded_outpost", False)
 
     def get_embedded_outpost_host(self, request: Request) -> str:
         """Get the FQDN configured on the embedded outpost"""

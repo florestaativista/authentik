@@ -1,4 +1,5 @@
 """Authenticator Validation"""
+
 from datetime import datetime
 from hashlib import sha256
 from typing import Optional
@@ -6,14 +7,14 @@ from typing import Optional
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from jwt import PyJWTError, decode, encode
-from rest_framework.fields import CharField, IntegerField, JSONField, ListField, UUIDField
+from rest_framework.fields import CharField, IntegerField, ListField, UUIDField
 from rest_framework.serializers import ValidationError
 
-from authentik.core.api.utils import PassiveSerializer
+from authentik.core.api.utils import JSONDictField, PassiveSerializer
 from authentik.core.models import User
 from authentik.events.models import Event, EventAction
 from authentik.flows.challenge import ChallengeResponse, ChallengeTypes, WithUserInfoChallenge
-from authentik.flows.exceptions import FlowSkipStageException
+from authentik.flows.exceptions import FlowSkipStageException, StageInvalidException
 from authentik.flows.models import FlowDesignation, NotConfiguredAction, Stage
 from authentik.flows.planner import PLAN_CONTEXT_PENDING_USER
 from authentik.flows.stage import ChallengeStageView
@@ -68,7 +69,7 @@ class AuthenticatorValidationChallengeResponse(ChallengeResponse):
     selected_stage = CharField(required=False)
 
     code = CharField(required=False)
-    webauthn = JSONField(required=False)
+    webauthn = JSONDictField(required=False)
     duo = IntegerField(required=False)
     component = CharField(default="ak-stage-authenticator-validate")
 
@@ -153,6 +154,16 @@ class AuthenticatorValidateStageView(ChallengeStageView):
     def get_device_challenges(self) -> list[dict]:
         """Get a list of all device challenges applicable for the current stage"""
         challenges = []
+        pending_user = self.get_pending_user()
+        if pending_user.is_anonymous:
+            # We shouldn't get here without any kind of authentication data
+            raise StageInvalidException()
+        # When `pretend_user_exists` is enabled in the identification stage,
+        # `pending_user` will be a user model that isn't save to the DB
+        # hence it doesn't have a PK. In that case we just return an empty list of
+        # authenticators
+        if not pending_user.pk:
+            return []
         # Convert to a list to have usable log output instead of just <generator ...>
         user_devices = list(devices_for_user(self.get_pending_user()))
         self.logger.debug("Got devices for user", devices=user_devices)
@@ -300,8 +311,10 @@ class AuthenticatorValidateStageView(ChallengeStageView):
             serializer = SelectableStageSerializer(
                 data={
                     "pk": stage.pk,
-                    "name": stage.name,
-                    "verbose_name": str(stage._meta.verbose_name),
+                    "name": stage.friendly_name or stage.name,
+                    "verbose_name": str(stage._meta.verbose_name)
+                    .replace("Setup Stage", "")
+                    .strip(),
                     "meta_model_name": f"{stage._meta.app_label}.{stage._meta.model_name}",
                 }
             )

@@ -1,4 +1,5 @@
 """Flows Planner"""
+
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -23,6 +24,7 @@ from authentik.flows.models import (
 )
 from authentik.lib.config import CONFIG
 from authentik.policies.engine import PolicyEngine
+from authentik.root.middleware import ClientIPMiddleware
 
 LOGGER = get_logger()
 PLAN_CONTEXT_PENDING_USER = "pending_user"
@@ -141,6 +143,10 @@ class FlowPlanner:
             and not request.user.is_superuser
         ):
             raise FlowNonApplicableException()
+        if self.flow.authentication == FlowAuthenticationRequirement.REQUIRE_OUTPOST:
+            outpost_user = ClientIPMiddleware.get_outpost_user(request)
+            if not outpost_user:
+                raise FlowNonApplicableException()
 
     def plan(
         self, request: HttpRequest, default_context: Optional[dict[str, Any]] = None

@@ -1,9 +1,13 @@
+import "@goauthentik/admin/common/ak-license-notice";
 import "@goauthentik/admin/property-mappings/PropertyMappingLDAPForm";
 import "@goauthentik/admin/property-mappings/PropertyMappingNotification";
+import "@goauthentik/admin/property-mappings/PropertyMappingRACForm";
 import "@goauthentik/admin/property-mappings/PropertyMappingSAMLForm";
 import "@goauthentik/admin/property-mappings/PropertyMappingScopeForm";
 import "@goauthentik/admin/property-mappings/PropertyMappingTestForm";
+import { WithLicenseSummary } from "@goauthentik/app/elements/Interface/licenseSummaryProvider";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
+import "@goauthentik/elements/Alert";
 import { AKElement } from "@goauthentik/elements/Base";
 import "@goauthentik/elements/forms/ProxyForm";
 import "@goauthentik/elements/wizard/FormWizardPage";
@@ -12,7 +16,7 @@ import { WizardPage } from "@goauthentik/elements/wizard/WizardPage";
 
 import { msg, str } from "@lit/localize";
 import { customElement } from "@lit/reactive-element/decorators/custom-element.js";
-import { CSSResult, TemplateResult, html } from "lit";
+import { TemplateResult, html, nothing } from "lit";
 import { property } from "lit/decorators.js";
 
 import PFButton from "@patternfly/patternfly/components/Button/button.css";
@@ -23,11 +27,11 @@ import PFBase from "@patternfly/patternfly/patternfly-base.css";
 import { PropertymappingsApi, TypeCreate } from "@goauthentik/api";
 
 @customElement("ak-property-mapping-wizard-initial")
-export class InitialPropertyMappingWizardPage extends WizardPage {
+export class InitialPropertyMappingWizardPage extends WithLicenseSummary(WizardPage) {
     @property({ attribute: false })
     mappingTypes: TypeCreate[] = [];
 
-    static get styles(): CSSResult[] {
+    static get styles() {
         return [PFBase, PFForm, PFButton, PFRadio];
     }
     sidebarLabel = () => msg("Select type");
@@ -46,6 +50,7 @@ export class InitialPropertyMappingWizardPage extends WizardPage {
     render(): TemplateResult {
         return html`<form class="pf-c-form pf-m-horizontal">
             ${this.mappingTypes.map((type) => {
+                const requiresEnteprise = type.requiresEnterprise && !this.hasEnterpriseLicense;
                 return html`<div class="pf-c-radio">
                     <input
                         class="pf-c-radio__input"
@@ -59,11 +64,17 @@ export class InitialPropertyMappingWizardPage extends WizardPage {
                             ];
                             this.host.isValid = true;
                         }}
+                        ?disabled=${type.requiresEnterprise ? this.hasEnterpriseLicense : false}
                     />
                     <label class="pf-c-radio__label" for=${`${type.component}-${type.modelName}`}
                         >${type.name}</label
                     >
-                    <span class="pf-c-radio__description">${type.description}</span>
+                    <span class="pf-c-radio__description"
+                        >${type.description}
+                        ${requiresEnteprise
+                            ? html`<ak-license-notice></ak-license-notice>`
+                            : nothing}</span
+                    >
                 </div>`;
             })}
         </form>`;
@@ -72,17 +83,17 @@ export class InitialPropertyMappingWizardPage extends WizardPage {
 
 @customElement("ak-property-mapping-wizard")
 export class PropertyMappingWizard extends AKElement {
-    static get styles(): CSSResult[] {
+    static get styles() {
         return [PFBase, PFButton, PFRadio];
     }
 
     @property({ attribute: false })
     mappingTypes: TypeCreate[] = [];
 
-    firstUpdated(): void {
-        new PropertymappingsApi(DEFAULT_CONFIG).propertymappingsAllTypesList().then((types) => {
-            this.mappingTypes = types;
-        });
+    async firstUpdated(): Promise<void> {
+        this.mappingTypes = await new PropertymappingsApi(
+            DEFAULT_CONFIG,
+        ).propertymappingsAllTypesList();
     }
 
     render(): TemplateResult {

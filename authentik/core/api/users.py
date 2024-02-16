@@ -1,4 +1,5 @@
 """User API Views"""
+
 from datetime import timedelta
 from json import loads
 from typing import Any, Optional
@@ -30,15 +31,9 @@ from drf_spectacular.utils import (
     extend_schema_field,
     inline_serializer,
 )
-from guardian.shortcuts import get_anonymous_user, get_objects_for_user
+from guardian.shortcuts import get_objects_for_user
 from rest_framework.decorators import action
-from rest_framework.fields import (
-    CharField,
-    IntegerField,
-    JSONField,
-    ListField,
-    SerializerMethodField,
-)
+from rest_framework.fields import CharField, IntegerField, ListField, SerializerMethodField
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import (
@@ -56,8 +51,9 @@ from structlog.stdlib import get_logger
 from authentik.admin.api.metrics import CoordinateSerializer
 from authentik.api.decorators import permission_required
 from authentik.blueprints.v1.importer import SERIALIZER_CONTEXT_BLUEPRINT
+from authentik.brands.models import Brand
 from authentik.core.api.used_by import UsedByMixin
-from authentik.core.api.utils import LinkSerializer, PassiveSerializer, is_dict
+from authentik.core.api.utils import JSONDictField, LinkSerializer, PassiveSerializer
 from authentik.core.middleware import (
     SESSION_KEY_IMPERSONATE_ORIGINAL_USER,
     SESSION_KEY_IMPERSONATE_USER,
@@ -77,11 +73,10 @@ from authentik.flows.exceptions import FlowNonApplicableException
 from authentik.flows.models import FlowToken
 from authentik.flows.planner import PLAN_CONTEXT_PENDING_USER, FlowPlanner
 from authentik.flows.views.executor import QS_KEY_TOKEN
-from authentik.lib.config import CONFIG
+from authentik.lib.avatars import get_avatar
 from authentik.stages.email.models import EmailStage
 from authentik.stages.email.tasks import send_mails
 from authentik.stages.email.utils import TemplateEmailMessage
-from authentik.tenants.models import Tenant
 
 LOGGER = get_logger()
 
@@ -89,7 +84,7 @@ LOGGER = get_logger()
 class UserGroupSerializer(ModelSerializer):
     """Simplified Group Serializer for user's groups"""
 
-    attributes = JSONField(required=False)
+    attributes = JSONDictField(required=False)
     parent_name = CharField(source="parent.name", read_only=True)
 
     class Meta:
@@ -109,14 +104,21 @@ class UserSerializer(ModelSerializer):
     """User Serializer"""
 
     is_superuser = BooleanField(read_only=True)
-    avatar = CharField(read_only=True)
-    attributes = JSONField(validators=[is_dict], required=False)
+    avatar = SerializerMethodField()
+    attributes = JSONDictField(required=False)
     groups = PrimaryKeyRelatedField(
-        allow_empty=True, many=True, source="ak_groups", queryset=Group.objects.all(), default=list
+        allow_empty=True,
+        many=True,
+        source="ak_groups",
+        queryset=Group.objects.all().order_by("name"),
+        default=list,
     )
     groups_obj = ListSerializer(child=UserGroupSerializer(), read_only=True, source="ak_groups")
     uid = CharField(read_only=True)
-    username = CharField(max_length=150, validators=[UniqueValidator(queryset=User.objects.all())])
+    username = CharField(
+        max_length=150,
+        validators=[UniqueValidator(queryset=User.objects.all().order_by("username"))],
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -149,6 +151,10 @@ class UserSerializer(ModelSerializer):
         if len(instance.password) == 0:
             instance.set_unusable_password()
             instance.save()
+
+    def get_avatar(self, user: User) -> str:
+        """User's avatar, either a http/https URL or a data URI"""
+        return get_avatar(user, self.context["request"])
 
     def validate_path(self, path: str) -> str:
         """Validate path"""
@@ -204,11 +210,15 @@ class UserSelfSerializer(ModelSerializer):
     """User Serializer for information a user can retrieve about themselves"""
 
     is_superuser = BooleanField(read_only=True)
-    avatar = CharField(read_only=True)
+    avatar = SerializerMethodField()
     groups = SerializerMethodField()
     uid = CharField(read_only=True)
     settings = SerializerMethodField()
     system_permissions = SerializerMethodField()
+
+    def get_avatar(self, user: User) -> str:
+        """User's avatar, either a http/https URL or a data URI"""
+        return get_avatar(user, self.context["request"])
 
     @extend_schema_field(
         ListSerializer(
@@ -227,15 +237,15 @@ class UserSelfSerializer(ModelSerializer):
             }
 
     def get_settings(self, user: User) -> dict[str, Any]:
-        """Get user settings with tenant and group settings applied"""
+        """Get user settings with brand and group settings applied"""
         return user.group_attributes(self._context["request"]).get("settings", {})
 
     def get_system_permissions(self, user: User) -> list[str]:
         """Get all system permissions assigned to the user"""
         return list(
-            user.user_permissions.filter(
-                content_type__app_label="authentik_rbac", content_type__model="systempermission"
-            ).values_list("codename", flat=True)
+            x.split(".", maxsplit=1)[1]
+            for x in user.get_all_permissions()
+            if x.startswith("authentik_rbac")
         )
 
     class Meta:
@@ -336,11 +346,11 @@ class UsersFilter(FilterSet):
     groups_by_name = ModelMultipleChoiceFilter(
         field_name="ak_groups__name",
         to_field_name="name",
-        queryset=Group.objects.all(),
+        queryset=Group.objects.all().order_by("name"),
     )
     groups_by_pk = ModelMultipleChoiceFilter(
         field_name="ak_groups",
-        queryset=Group.objects.all(),
+        queryset=Group.objects.all().order_by("name"),
     )
 
     def filter_attributes(self, queryset, name, value):
@@ -385,14 +395,14 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     filterset_class = UsersFilter
 
     def get_queryset(self):  # pragma: no cover
-        return User.objects.all().exclude(pk=get_anonymous_user().pk)
+        return User.objects.all().exclude_anonymous().prefetch_related("ak_groups")
 
     def _create_recovery_link(self) -> tuple[Optional[str], Optional[Token]]:
-        """Create a recovery link (when the current tenant has a recovery flow set),
+        """Create a recovery link (when the current brand has a recovery flow set),
         that can either be shown to an admin or sent to the user directly"""
-        tenant: Tenant = self.request._request.tenant
+        brand: Brand = self.request._request.brand
         # Check that there is a recovery flow, if not return an error
-        flow = tenant.flow_recovery
+        flow = brand.flow_recovery
         if not flow:
             LOGGER.debug("No recovery flow set")
             return None, None
@@ -624,7 +634,7 @@ class UserViewSet(UsedByMixin, ModelViewSet):
     @action(detail=True, methods=["POST"])
     def impersonate(self, request: Request, pk: int) -> Response:
         """Impersonate a user"""
-        if not CONFIG.get_bool("impersonation"):
+        if not request.tenant.impersonation:
             LOGGER.debug("User attempted to impersonate", user=request.user)
             return Response(status=401)
         if not request.user.has_perm("impersonate"):

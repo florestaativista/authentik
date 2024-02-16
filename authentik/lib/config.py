@@ -1,4 +1,5 @@
 """authentik core config loader"""
+
 import base64
 import json
 import os
@@ -34,7 +35,9 @@ REDIS_ENV_KEYS = [
     f"{ENV_PREFIX}_REDIS__TLS_REQS",
 ]
 
+# Old key -> new key
 DEPRECATIONS = {
+    "geoip": "events.context_processors.geoip",
     "redis.broker_url": "broker.url",
     "redis.broker_transport_options": "broker.transport_options",
     "redis.cache_timeout": "cache.timeout",
@@ -112,6 +115,8 @@ class ConfigLoader:
 
     A variable like AUTHENTIK_POSTGRESQL__HOST would translate to postgresql.host"""
 
+    deprecations: dict[tuple[str, str], str] = {}
+
     def __init__(self, **kwargs):
         super().__init__()
         self.__config = {}
@@ -138,9 +143,9 @@ class ConfigLoader:
                         self.update_from_file(env_file)
         self.update_from_env()
         self.update(self.__config, kwargs)
-        self.check_deprecations()
+        self.deprecations = self.check_deprecations()
 
-    def check_deprecations(self):
+    def check_deprecations(self) -> dict[str, str]:
         """Warn if any deprecated configuration options are used"""
 
         def _pop_deprecated_key(current_obj, dot_parts, index):
@@ -153,25 +158,23 @@ class ConfigLoader:
                 current_obj.pop(dot_part)
             return value
 
+        deprecation_replacements = {}
         for deprecation, replacement in DEPRECATIONS.items():
-            if self.get(deprecation, default=UNSET) is not UNSET:
-                message = (
-                    f"'{deprecation}' has been deprecated in favor of '{replacement}'! "
-                    + "Please update your configuration."
-                )
-                self.log(
-                    "warning",
-                    message,
-                )
-                try:
-                    from authentik.events.models import Event, EventAction
+            if self.get(deprecation, default=UNSET) is UNSET:
+                continue
+            message = (
+                f"'{deprecation}' has been deprecated in favor of '{replacement}'! "
+                + "Please update your configuration."
+            )
+            self.log(
+                "warning",
+                message,
+            )
+            deprecation_replacements[(deprecation, replacement)] = message
 
-                    Event.new(EventAction.CONFIGURATION_ERROR, message=message).save()
-                except ImportError:
-                    continue
-
-                deprecated_attr = _pop_deprecated_key(self.__config, deprecation.split("."), 0)
-                self.set(replacement, deprecated_attr.value)
+            deprecated_attr = _pop_deprecated_key(self.__config, deprecation.split("."), 0)
+            self.set(replacement, deprecated_attr)
+        return deprecation_replacements
 
     def log(self, level: str, message: str, **kwargs):
         """Custom Log method, we want to ensure ConfigLoader always logs JSON even when
@@ -200,12 +203,13 @@ class ConfigLoader:
                 root[key] = value
         return root
 
-    def refresh(self, key: str):
+    def refresh(self, key: str, default=None, sep=".") -> Any:
         """Update a single value"""
-        attr: Attr = get_path_from_dict(self.raw, key)
+        attr: Attr = get_path_from_dict(self.raw, key, sep=sep, default=Attr(default))
         if attr.source_type != Attr.Source.URI:
-            return
+            return attr.value
         attr.value = self.parse_uri(attr.source).value
+        return attr.value
 
     def parse_uri(self, value: str) -> Attr:
         """Parse string values which start with a URI"""
@@ -317,7 +321,9 @@ class ConfigLoader:
 
     def set(self, path: str, value: Any, sep="."):
         """Set value using same syntax as get()"""
-        set_path_in_dict(self.raw, path, Attr(value), sep=sep)
+        if not isinstance(value, Attr):
+            value = Attr(value)
+        set_path_in_dict(self.raw, path, value, sep=sep)
 
 
 CONFIG = ConfigLoader()
