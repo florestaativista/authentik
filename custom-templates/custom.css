@@ -1,0 +1,116 @@
+  .ak-login-container {
+    width: 23rem;
+  }
+  
+  
+  .pf-c-page__drawer .pf-c-drawer__content .pf-c-login .ak-login-container
+  .pf-c-login__header .pf-c-brand {
+    margin-bottom: 20px;
+    margin-top: 200px;
+  }
+  
+  .pf-c-brand {
+    margin-bottom: 20px;
+    margin-top: 100px;
+  }
+
+  .pf-c-title.pf-m-3xl {
+    font-size: 1.55em;
+  }
+  
+  @media (prefers-color-scheme: light) {
+    .pf-c-page__drawer .pf-c-drawer__content .pf-c-login .ak-login-container .pf-c-login__main {
+      background-color: #18191a;
+      color: #fff;
+    }
+  }
+  
+  
+  @media (prefers-color-scheme: light) {
+    .pf-c-login__main {
+      background-color: #18191a;
+      color: #fff;
+    }
+  }
+  
+  .pf-c-login__main-header {
+    padding-top: 30px;
+  }
+  
+  .pf-c-page__drawer .pf-c-drawer__content .pf-c-login .ak-login-container
+  .pf-c-login__main .pf-c-login__main-header h1.pf-c-title {
+    font-family: "Degular Display";
+    text-transform: uppercase;
+    color: #fff;
+  }
+  
+  
+  h1.pf-c-title {
+    font-family: "Degular Display";
+    text-transform: uppercase;
+    color: #fff;
+  }
+  
+  .pf-c-login__main-body {
+    padding-bottom: 0;
+  }
+  
+  .pf-c-form {
+    font-weight: bold;
+    font-family: "Space Grotesk";
+    gap: 15px;
+  }
+  
+  .pf-c-page__drawer .pf-c-drawer__content .pf-c-login .ak-login-container
+  .pf-c-login__main .pf-c-login__main-body .pf-c-form .pf-m-action
+  .pf-c-button.pf-m-primary {
+    background-color: #FFF;
+    font-family: "Degular Display";
+    text-transform: uppercase;
+    color: #000;
+  }
+  
+  button.pf-c-button.pf-m-primary {
+    background-color: #FFF;
+    font-family: "Degular Display";
+    text-transform: uppercase;
+    color: #000;
+  }
+  
+  @media (prefers-color-scheme: light) {
+    .pf-c-page__drawer .pf-c-drawer__content .pf-c-login .ak-login-container .pf-c-login__main .pf-c-login__main-footer .pf-c-login__main-footer-band {
+      background-color: #2b2e33;
+    }
+  }
+  
+  
+  @media (prefers-color-scheme: light) {
+    .pf-c-login__main-footer-band {
+      background-color: #2b2e33;
+    }
+  }
+  
+  #enroll {
+    display: block;
+    background-color: #FF5FDB;
+    color: #000;
+    font-family: "Degular Display";
+    text-transform: uppercase;
+    margin-top: 10px;
+    max-width: 42%;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 4px;
+  }
+
+  .pf-c-button.pf-m-primary.pf-m-block.style-scope.ak-stage-email {
+    background: none;
+    font-size: 10px;
+    color: #FFF;
+  }
+  
+  .pf-c-page__drawer .pf-c-drawer__content .pf-c-login .ak-login-container
+  .pf-c-login__footer ul li {
+    display: none;
+  }
+  
