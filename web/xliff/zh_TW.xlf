@@ -7926,6 +7926,9 @@ Bindings to groups/users are checked against the user of the event.</source>
 <trans-unit id="s5d7748b1d2363478">
   <source>Are you sure you want to remove the selected users from the group <x id="0" equiv-text="${this.targetGroup?.name}"/>?</source>
 </trans-unit>
+<trans-unit id="s911f86fbb5e3aed3">
+  <source>Português (Brazil)</source>
+</trans-unit>
     </body>
   </file>
 </xliff>

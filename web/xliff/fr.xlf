@@ -7987,6 +7987,9 @@ Les liaisons avec les groupes/utilisateurs sont vérifiées par rapport à l'uti
   <source>When enabled, the stage will always accept the given user identifier and continue.</source>
   <target>Lorsqu'activé, l'étape acceptera toujours l'identifiant utilisateur donné et continuera.</target>
 </trans-unit>
+<trans-unit id="s911f86fbb5e3aed3">
+  <source>Português (Brazil)</source>
+</trans-unit>
     </body>
   </file>
 </xliff>

@@ -7989,6 +7989,9 @@ Bindings to groups/users are checked against the user of the event.</source>
   <source>When enabled, the stage will always accept the given user identifier and continue.</source>
   <target>启用时，此阶段总是会接受指定的用户 ID 并继续。</target>
 </trans-unit>
+<trans-unit id="s911f86fbb5e3aed3">
+  <source>Português (Brazil)</source>
+</trans-unit>
     </body>
   </file>
 </xliff>
