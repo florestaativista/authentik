@@ -43,6 +43,7 @@ const debug: LocaleRow = [
 // prettier-ignore
 const LOCALE_TABLE: LocaleRow[] = [
     ["en",      /^en([_-]|$)/i,      () => msg("English"),               async () => await import("@goauthentik/locales/en")],
+    ["pt-BR",   /^pt([_-]BR$)/i,     () => msg("Português (Brazil)"),    async () => await import("@goauthentik/locales/pt-BR")],
     ["es",      /^es([_-]|$)/i,      () => msg("Spanish"),               async () => await import("@goauthentik/locales/es")],
     ["de",      /^de([_-]|$)/i,      () => msg("German"),                async () => await import("@goauthentik/locales/de")],
     ["fr",      /^fr([_-]|$)/i,      () => msg("French"),                async () => await import("@goauthentik/locales/fr")],

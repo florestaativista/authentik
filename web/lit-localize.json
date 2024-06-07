@@ -14,6 +14,7 @@
         "zh-Hant",
         "zh-CN",
         "zh_TW",
+        "pt-BR",
         "pseudo-LOCALE"
     ],
     "tsConfig": "./tsconfig.json",
