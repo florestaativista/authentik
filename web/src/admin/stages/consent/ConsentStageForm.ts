@@ -33,11 +33,10 @@ export class ConsentStageForm extends BaseStageForm<ConsentStage> {
                 stageUuid: this.instance.pk || "",
                 consentStageRequest: data,
             });
-        } else {
-            return new StagesApi(DEFAULT_CONFIG).stagesConsentCreate({
-                consentStageRequest: data,
-            });
         }
+        return new StagesApi(DEFAULT_CONFIG).stagesConsentCreate({
+            consentStageRequest: data,
+        });
     }
 
     renderForm(): TemplateResult {
@@ -83,13 +82,13 @@ export class ConsentStageForm extends BaseStageForm<ConsentStage> {
                                 value=${ConsentStageModeEnum.Permanent}
                                 ?selected=${this.instance?.mode === ConsentStageModeEnum.Permanent}
                             >
-                                ${msg("Consent given last indefinitely")}
+                                ${msg("Consent given lasts indefinitely")}
                             </option>
                             <option
                                 value=${ConsentStageModeEnum.Expiring}
                                 ?selected=${this.instance?.mode === ConsentStageModeEnum.Expiring}
                             >
-                                ${msg("Consent expires.")}
+                                ${msg("Consent expires")}
                             </option>
                         </select>
                     </ak-form-element-horizontal>
@@ -112,5 +111,11 @@ export class ConsentStageForm extends BaseStageForm<ConsentStage> {
                     </ak-form-element-horizontal>
                 </div>
             </ak-form-group>`;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-stage-consent-form": ConsentStageForm;
     }
 }

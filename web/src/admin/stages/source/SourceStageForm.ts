@@ -31,11 +31,10 @@ export class SourceStageForm extends BaseStageForm<SourceStage> {
                 stageUuid: this.instance.pk || "",
                 sourceStageRequest: data,
             });
-        } else {
-            return new StagesApi(DEFAULT_CONFIG).stagesSourceCreate({
-                sourceStageRequest: data,
-            });
         }
+        return new StagesApi(DEFAULT_CONFIG).stagesSourceCreate({
+            sourceStageRequest: data,
+        });
     }
 
     renderForm(): TemplateResult {
@@ -99,5 +98,11 @@ export class SourceStageForm extends BaseStageForm<SourceStage> {
                 <ak-utils-time-delta-help></ak-utils-time-delta-help>
             </ak-form-element-horizontal>
         `;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-stage-source-form": SourceStageForm;
     }
 }

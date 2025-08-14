@@ -2,7 +2,7 @@ import "@goauthentik/admin/common/ak-crypto-certificate-search";
 import { placeholderHelperText } from "@goauthentik/admin/helperText";
 import { BaseSourceForm } from "@goauthentik/admin/sources/BaseSourceForm";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
-import { first } from "@goauthentik/common/utils";
+import "@goauthentik/elements/ak-dual-select/ak-dual-select-dynamic-selected-provider.js";
 import "@goauthentik/elements/forms/FormGroup";
 import "@goauthentik/elements/forms/HorizontalFormElement";
 import "@goauthentik/elements/forms/SearchSelect";
@@ -18,10 +18,10 @@ import {
     Group,
     LDAPSource,
     LDAPSourceRequest,
-    PaginatedLDAPPropertyMappingList,
-    PropertymappingsApi,
     SourcesApi,
 } from "@goauthentik/api";
+
+import { propertyMappingsProvider, propertyMappingsSelector } from "./LDAPSourceFormHelpers.js";
 
 @customElement("ak-source-ldap-form")
 export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
@@ -31,27 +31,17 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
         });
     }
 
-    async load(): Promise<void> {
-        this.propertyMappings = await new PropertymappingsApi(
-            DEFAULT_CONFIG,
-        ).propertymappingsLdapList({
-            ordering: "managed,object_field",
-        });
-    }
-
-    propertyMappings?: PaginatedLDAPPropertyMappingList;
-
     async send(data: LDAPSource): Promise<LDAPSource> {
         if (this.instance) {
             return new SourcesApi(DEFAULT_CONFIG).sourcesLdapPartialUpdate({
                 slug: this.instance.slug,
                 patchedLDAPSourceRequest: data,
             });
-        } else {
-            return new SourcesApi(DEFAULT_CONFIG).sourcesLdapCreate({
-                lDAPSourceRequest: data as unknown as LDAPSourceRequest,
-            });
         }
+
+        return new SourcesApi(DEFAULT_CONFIG).sourcesLdapCreate({
+            lDAPSourceRequest: data as unknown as LDAPSourceRequest,
+        });
     }
 
     renderForm(): TemplateResult {
@@ -76,7 +66,7 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                     <input
                         class="pf-c-switch__input"
                         type="checkbox"
-                        ?checked=${first(this.instance?.enabled, true)}
+                        ?checked=${this.instance?.enabled ?? true}
                     />
                     <span class="pf-c-switch__toggle">
                         <span class="pf-c-switch__toggle-icon">
@@ -91,7 +81,7 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                     <input
                         class="pf-c-switch__input"
                         type="checkbox"
-                        ?checked=${first(this.instance?.passwordLoginUpdateInternalPassword, false)}
+                        ?checked=${this.instance?.passwordLoginUpdateInternalPassword ?? false}
                     />
                     <span class="pf-c-switch__toggle">
                         <span class="pf-c-switch__toggle-icon">
@@ -113,7 +103,7 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                     <input
                         class="pf-c-switch__input"
                         type="checkbox"
-                        ?checked=${first(this.instance?.syncUsers, true)}
+                        ?checked=${this.instance?.syncUsers ?? true}
                     />
                     <span class="pf-c-switch__toggle">
                         <span class="pf-c-switch__toggle-icon">
@@ -128,7 +118,7 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                     <input
                         class="pf-c-switch__input"
                         type="checkbox"
-                        ?checked=${first(this.instance?.syncUsersPassword, true)}
+                        ?checked=${this.instance?.syncUsersPassword ?? true}
                     />
                     <span class="pf-c-switch__toggle">
                         <span class="pf-c-switch__toggle-icon">
@@ -148,7 +138,7 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                     <input
                         class="pf-c-switch__input"
                         type="checkbox"
-                        ?checked=${first(this.instance?.syncGroups, true)}
+                        ?checked=${this.instance?.syncGroups ?? true}
                     />
                     <span class="pf-c-switch__toggle">
                         <span class="pf-c-switch__toggle-icon">
@@ -157,6 +147,26 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                     </span>
                     <span class="pf-c-switch__label">${msg("Sync groups")}</span>
                 </label>
+            </ak-form-element-horizontal>
+            <ak-form-element-horizontal name="deleteNotFoundObjects">
+                <label class="pf-c-switch">
+                    <input
+                        class="pf-c-switch__input"
+                        type="checkbox"
+                        ?checked=${this.instance?.deleteNotFoundObjects ?? false}
+                    />
+                    <span class="pf-c-switch__toggle">
+                        <span class="pf-c-switch__toggle-icon">
+                            <i class="fas fa-check" aria-hidden="true"></i>
+                        </span>
+                    </span>
+                    <span class="pf-c-switch__label">${msg("Delete Not Found Objects")}</span>
+                </label>
+                <p class="pf-c-form__helper-text">
+                    ${msg(
+                        "Delete authentik users and groups which were previously supplied by this source, but are now missing from it.",
+                    )}
+                </p>
             </ak-form-element-horizontal>
             <ak-form-group .expanded=${true}>
                 <span slot="header"> ${msg("Connection settings")} </span>
@@ -182,7 +192,7 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                             <input
                                 class="pf-c-switch__input"
                                 type="checkbox"
-                                ?checked=${first(this.instance?.startTls, true)}
+                                ?checked=${this.instance?.startTls ?? true}
                             />
                             <span class="pf-c-switch__toggle">
                                 <span class="pf-c-switch__toggle-icon">
@@ -200,7 +210,7 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                             <input
                                 class="pf-c-switch__input"
                                 type="checkbox"
-                                ?checked=${first(this.instance?.sni, false)}
+                                ?checked=${this.instance?.sni ?? false}
                             />
                             <span class="pf-c-switch__toggle">
                                 <span class="pf-c-switch__toggle-icon">
@@ -275,73 +285,34 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                 <div slot="body" class="pf-c-form">
                     <ak-form-element-horizontal
                         label=${msg("User Property Mappings")}
-                        name="propertyMappings"
+                        name="userPropertyMappings"
                     >
-                        <select class="pf-c-form-control" multiple>
-                            ${this.propertyMappings?.results.map((mapping) => {
-                                let selected = false;
-                                if (!this.instance?.propertyMappings) {
-                                    selected =
-                                        mapping.managed?.startsWith(
-                                            "goauthentik.io/sources/ldap/default",
-                                        ) ||
-                                        mapping.managed?.startsWith(
-                                            "goauthentik.io/sources/ldap/ms",
-                                        ) ||
-                                        false;
-                                } else {
-                                    selected = Array.from(this.instance?.propertyMappings).some(
-                                        (su) => {
-                                            return su == mapping.pk;
-                                        },
-                                    );
-                                }
-                                return html`<option
-                                    value=${ifDefined(mapping.pk)}
-                                    ?selected=${selected}
-                                >
-                                    ${mapping.name}
-                                </option>`;
-                            })}
-                        </select>
+                        <ak-dual-select-dynamic-selected
+                            .provider=${propertyMappingsProvider}
+                            .selector=${propertyMappingsSelector(
+                                this.instance?.userPropertyMappings,
+                            )}
+                            available-label="${msg("Available User Property Mappings")}"
+                            selected-label="${msg("Selected User Property Mappings")}"
+                        ></ak-dual-select-dynamic-selected>
                         <p class="pf-c-form__helper-text">
-                            ${msg("Property mappings used to user creation.")}
-                        </p>
-                        <p class="pf-c-form__helper-text">
-                            ${msg("Hold control/command to select multiple items.")}
+                            ${msg("Property mappings for user creation.")}
                         </p>
                     </ak-form-element-horizontal>
                     <ak-form-element-horizontal
                         label=${msg("Group Property Mappings")}
-                        name="propertyMappingsGroup"
+                        name="groupPropertyMappings"
                     >
-                        <select class="pf-c-form-control" multiple>
-                            ${this.propertyMappings?.results.map((mapping) => {
-                                let selected = false;
-                                if (!this.instance?.propertyMappingsGroup) {
-                                    selected =
-                                        mapping.managed ===
-                                        "goauthentik.io/sources/ldap/default-name";
-                                } else {
-                                    selected = Array.from(
-                                        this.instance?.propertyMappingsGroup,
-                                    ).some((su) => {
-                                        return su == mapping.pk;
-                                    });
-                                }
-                                return html`<option
-                                    value=${ifDefined(mapping.pk)}
-                                    ?selected=${selected}
-                                >
-                                    ${mapping.name}
-                                </option>`;
-                            })}
-                        </select>
+                        <ak-dual-select-dynamic-selected
+                            .provider=${propertyMappingsProvider}
+                            .selector=${propertyMappingsSelector(
+                                this.instance?.groupPropertyMappings,
+                            )}
+                            available-label="${msg("Available Group Property Mappings")}"
+                            selected-label="${msg("Selected Group Property Mappings")}"
+                        ></ak-dual-select-dynamic-selected>
                         <p class="pf-c-form__helper-text">
-                            ${msg("Property mappings used to group creation.")}
-                        </p>
-                        <p class="pf-c-form__helper-text">
-                            ${msg("Hold control/command to select multiple items.")}
+                            ${msg("Property mappings for group creation.")}
                         </p>
                     </ak-form-element-horizontal>
                 </div>
@@ -349,11 +320,12 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
             <ak-form-group>
                 <span slot="header"> ${msg("Additional settings")} </span>
                 <div slot="body" class="pf-c-form">
-                    <ak-form-element-horizontal label=${msg("Group")} name="syncParentGroup">
+                    <ak-form-element-horizontal label=${msg("Parent Group")} name="syncParentGroup">
                         <ak-search-select
                             .fetchObjects=${async (query?: string): Promise<Group[]> => {
                                 const args: CoreGroupsListRequest = {
                                     ordering: "name",
+                                    includeUsers: false,
                                 };
                                 if (query !== undefined) {
                                     args.search = query;
@@ -382,16 +354,14 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                     <ak-form-element-horizontal label=${msg("User path")} name="userPathTemplate">
                         <input
                             type="text"
-                            value="${first(
-                                this.instance?.userPathTemplate,
-                                "goauthentik.io/sources/%(slug)s",
-                            )}"
+                            value="${this.instance?.userPathTemplate ??
+                            "goauthentik.io/sources/%(slug)s"}"
                             class="pf-c-form-control"
                         />
                         <p class="pf-c-form__helper-text">${placeholderHelperText}</p>
                     </ak-form-element-horizontal>
                     <ak-form-element-horizontal
-                        label=${msg("Addition User DN")}
+                        label=${msg("Additional User DN")}
                         name="additionalUserDn"
                     >
                         <input
@@ -404,7 +374,7 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                         </p>
                     </ak-form-element-horizontal>
                     <ak-form-element-horizontal
-                        label=${msg("Addition Group DN")}
+                        label=${msg("Additional Group DN")}
                         name="additionalGroupDn"
                     >
                         <input
@@ -459,7 +429,44 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                         />
                         <p class="pf-c-form__helper-text">
                             ${msg(
-                                "Field which contains members of a group. Note that if using the \"memberUid\" field, the value is assumed to contain a relative distinguished name. e.g. 'memberUid=some-user' instead of 'memberUid=cn=some-user,ou=groups,...'",
+                                "Field which contains members of a group. The value of this field is matched against User membership attribute.",
+                            )}
+                        </p>
+                    </ak-form-element-horizontal>
+                    <ak-form-element-horizontal
+                        label=${msg("User membership attribute")}
+                        ?required=${true}
+                        name="userMembershipAttribute"
+                    >
+                        <input
+                            type="text"
+                            value="${this.instance?.userMembershipAttribute || "distinguishedName"}"
+                            class="pf-c-form-control"
+                            required
+                        />
+                        <p class="pf-c-form__helper-text">
+                            ${msg("Attribute which matches the value of Group membership field.")}
+                        </p>
+                    </ak-form-element-horizontal>
+                    <ak-form-element-horizontal name="lookupGroupsFromUser">
+                        <label class="pf-c-switch">
+                            <input
+                                class="pf-c-switch__input"
+                                type="checkbox"
+                                ?checked=${this.instance?.lookupGroupsFromUser ?? false}
+                            />
+                            <span class="pf-c-switch__toggle">
+                                <span class="pf-c-switch__toggle-icon">
+                                    <i class="fas fa-check" aria-hidden="true"></i>
+                                </span>
+                            </span>
+                            <span class="pf-c-switch__label"
+                                >${msg("Lookup using user attribute")}</span
+                            >
+                        </label>
+                        <p class="pf-c-form__helper-text">
+                            ${msg(
+                                "Field which contains DNs of groups the user is a member of. This field is used to lookup groups from users, e.g. 'memberOf'. To lookup nested groups in an Active Directory environment use 'memberOf:1.2.840.113556.1.4.1941:'.",
                             )}
                         </p>
                     </ak-form-element-horizontal>
@@ -480,5 +487,11 @@ export class LDAPSourceForm extends BaseSourceForm<LDAPSource> {
                     </ak-form-element-horizontal>
                 </div>
             </ak-form-group>`;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-source-ldap-form": LDAPSourceForm;
     }
 }

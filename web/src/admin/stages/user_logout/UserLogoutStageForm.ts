@@ -23,11 +23,10 @@ export class UserLogoutStageForm extends BaseStageForm<UserLogoutStage> {
                 stageUuid: this.instance.pk || "",
                 userLogoutStageRequest: data,
             });
-        } else {
-            return new StagesApi(DEFAULT_CONFIG).stagesUserLogoutCreate({
-                userLogoutStageRequest: data,
-            });
         }
+        return new StagesApi(DEFAULT_CONFIG).stagesUserLogoutCreate({
+            userLogoutStageRequest: data,
+        });
     }
 
     renderForm(): TemplateResult {
@@ -40,5 +39,11 @@ export class UserLogoutStageForm extends BaseStageForm<UserLogoutStage> {
                     required
                 />
             </ak-form-element-horizontal>`;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-stage-user-logout-form": UserLogoutStageForm;
     }
 }

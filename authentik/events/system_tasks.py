@@ -6,7 +6,7 @@ from typing import Any
 
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from structlog.stdlib import get_logger
+from structlog.stdlib import BoundLogger, get_logger
 from tenant_schemas_celery.task import TenantTask
 
 from authentik.events.logs import LogEvent
@@ -15,11 +15,11 @@ from authentik.events.models import SystemTask as DBSystemTask
 from authentik.events.utils import sanitize_item
 from authentik.lib.utils.errors import exception_to_string
 
-LOGGER = get_logger()
-
 
 class SystemTask(TenantTask):
     """Task which can save its state to the cache"""
+
+    logger: BoundLogger
 
     # For tasks that should only be listed if they failed, set this to False
     save_on_success: bool
@@ -53,16 +53,18 @@ class SystemTask(TenantTask):
             if not isinstance(msg, LogEvent):
                 self._messages[idx] = LogEvent(msg, logger=self.__name__, log_level="info")
 
-    def set_error(self, exception: Exception):
+    def set_error(self, exception: Exception, *messages: LogEvent):
         """Set result to error and save exception"""
         self._status = TaskStatus.ERROR
-        self._messages = [
-            LogEvent(exception_to_string(exception), logger=self.__name__, log_level="error")
-        ]
+        self._messages = list(messages)
+        self._messages.extend(
+            [LogEvent(exception_to_string(exception), logger=self.__name__, log_level="error")]
+        )
 
     def before_start(self, task_id, args, kwargs):
         self._start_precise = perf_counter()
         self._start = now()
+        self.logger = get_logger().bind(task_id=task_id)
         return super().before_start(task_id, args, kwargs)
 
     def db(self) -> DBSystemTask | None:

@@ -1,6 +1,5 @@
 import { BasePolicyForm } from "@goauthentik/admin/policies/BasePolicyForm";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
-import { first } from "@goauthentik/common/utils";
 import "@goauthentik/elements/forms/FormGroup";
 import "@goauthentik/elements/forms/HorizontalFormElement";
 import "@goauthentik/elements/forms/SearchSelect";
@@ -37,11 +36,10 @@ export class EventMatcherPolicyForm extends BasePolicyForm<EventMatcherPolicy> {
                 policyUuid: this.instance.pk || "",
                 eventMatcherPolicyRequest: data,
             });
-        } else {
-            return new PoliciesApi(DEFAULT_CONFIG).policiesEventMatcherCreate({
-                eventMatcherPolicyRequest: data,
-            });
         }
+        return new PoliciesApi(DEFAULT_CONFIG).policiesEventMatcherCreate({
+            eventMatcherPolicyRequest: data,
+        });
     }
 
     renderForm(): TemplateResult {
@@ -63,7 +61,7 @@ export class EventMatcherPolicyForm extends BasePolicyForm<EventMatcherPolicy> {
                     <input
                         class="pf-c-switch__input"
                         type="checkbox"
-                        ?checked=${first(this.instance?.executionLogging, false)}
+                        ?checked=${this.instance?.executionLogging ?? false}
                     />
                     <span class="pf-c-switch__toggle">
                         <span class="pf-c-switch__toggle-icon">
@@ -113,11 +111,13 @@ export class EventMatcherPolicyForm extends BasePolicyForm<EventMatcherPolicy> {
                         <input
                             type="text"
                             value="${ifDefined(this.instance?.clientIp || "")}"
-                            class="pf-c-form-control"
+                            class="pf-c-form-control pf-m-monospace"
+                            autocomplete="off"
+                            spellcheck="false"
                         />
                         <p class="pf-c-form__helper-text">
                             ${msg(
-                                "Matches Event's Client IP (strict matching, for network matching use an Expression Policy.",
+                                "Matches Event's Client IP (strict matching, for network matching use an Expression Policy).",
                             )}
                         </p>
                     </ak-form-element-horizontal>
@@ -179,5 +179,11 @@ export class EventMatcherPolicyForm extends BasePolicyForm<EventMatcherPolicy> {
                     </ak-form-element-horizontal>
                 </div>
             </ak-form-group>`;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-policy-event-matcher-form": EventMatcherPolicyForm;
     }
 }

@@ -1,8 +1,8 @@
 import "@goauthentik/admin/flows/StageBindingForm";
 import "@goauthentik/admin/policies/BoundPoliciesList";
+import "@goauthentik/admin/rbac/ObjectPermissionModal";
 import "@goauthentik/admin/stages/StageWizard";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
-import { uiConfig } from "@goauthentik/common/ui/config";
 import "@goauthentik/elements/Tabs";
 import "@goauthentik/elements/forms/DeleteBulkForm";
 import "@goauthentik/elements/forms/ModalForm";
@@ -15,7 +15,11 @@ import { TemplateResult, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 
-import { FlowStageBinding, FlowsApi } from "@goauthentik/api";
+import {
+    FlowStageBinding,
+    FlowsApi,
+    RbacPermissionsAssignedByUsersListModelEnum,
+} from "@goauthentik/api";
 
 @customElement("ak-bound-stages-list")
 export class BoundStagesList extends Table<FlowStageBinding> {
@@ -28,12 +32,10 @@ export class BoundStagesList extends Table<FlowStageBinding> {
     @property()
     target?: string;
 
-    async apiEndpoint(page: number): Promise<PaginatedResponse<FlowStageBinding>> {
+    async apiEndpoint(): Promise<PaginatedResponse<FlowStageBinding>> {
         return new FlowsApi(DEFAULT_CONFIG).flowsBindingsList({
+            ...(await this.defaultEndpointConfig()),
             target: this.target || "",
-            ordering: this.order,
-            page: page,
-            pageSize: (await uiConfig()).pagination.perPage,
         });
     }
 
@@ -102,7 +104,12 @@ export class BoundStagesList extends Table<FlowStageBinding> {
                     <button slot="trigger" class="pf-c-button pf-m-secondary">
                         ${msg("Edit Binding")}
                     </button>
-                </ak-forms-modal>`,
+                </ak-forms-modal>
+                <ak-rbac-object-permission-modal
+                    model=${RbacPermissionsAssignedByUsersListModelEnum.AuthentikFlowsFlowstagebinding}
+                    objectPk=${item.pk}
+                >
+                </ak-rbac-object-permission-modal>`,
         ];
     }
 
@@ -128,13 +135,18 @@ export class BoundStagesList extends Table<FlowStageBinding> {
             html`<ak-empty-state header=${msg("No Stages bound")} icon="pf-icon-module">
                 <div slot="body">${msg("No stages are currently bound to this flow.")}</div>
                 <div slot="primary">
+                    <ak-stage-wizard
+                        createText=${msg("Create and bind Stage")}
+                        ?showBindingPage=${true}
+                        bindingTarget=${ifDefined(this.target)}
+                    ></ak-stage-wizard>
                     <ak-forms-modal>
                         <span slot="submit"> ${msg("Create")} </span>
                         <span slot="header"> ${msg("Create Stage binding")} </span>
                         <ak-stage-binding-form slot="form" targetPk=${ifDefined(this.target)}>
                         </ak-stage-binding-form>
                         <button slot="trigger" class="pf-c-button pf-m-primary">
-                            ${msg("Bind stage")}
+                            ${msg("Bind existing stage")}
                         </button>
                     </ak-forms-modal>
                 </div>
@@ -160,5 +172,11 @@ export class BoundStagesList extends Table<FlowStageBinding> {
             </ak-forms-modal>
             ${super.renderToolbar()}
         `;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-bound-stages-list": BoundStagesList;
     }
 }

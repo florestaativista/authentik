@@ -1,7 +1,6 @@
 import { BaseStageForm } from "@goauthentik/admin/stages/BaseStageForm";
 import { UserCreationModeEnum } from "@goauthentik/api/dist/models/UserCreationModeEnum";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
-import { first } from "@goauthentik/common/utils";
 import "@goauthentik/elements/forms/FormGroup";
 import "@goauthentik/elements/forms/HorizontalFormElement";
 import "@goauthentik/elements/forms/Radio";
@@ -35,11 +34,10 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                 stageUuid: this.instance.pk || "",
                 userWriteStageRequest: data,
             });
-        } else {
-            return new StagesApi(DEFAULT_CONFIG).stagesUserWriteCreate({
-                userWriteStageRequest: data,
-            });
         }
+        return new StagesApi(DEFAULT_CONFIG).stagesUserWriteCreate({
+            userWriteStageRequest: data,
+        });
     }
 
     renderForm(): TemplateResult {
@@ -95,7 +93,7 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                             <input
                                 class="pf-c-switch__input"
                                 type="checkbox"
-                                ?checked=${first(this.instance?.createUsersAsInactive, true)}
+                                ?checked=${this.instance?.createUsersAsInactive ?? true}
                             />
                             <span class="pf-c-switch__toggle">
                                 <span class="pf-c-switch__toggle-icon">
@@ -114,7 +112,7 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                         <ak-radio
                             .options=${[
                                 {
-                                    label: "Internal",
+                                    label: msg("Internal"),
                                     value: UserTypeEnum.Internal,
                                     default: true,
                                     description: html`${msg(
@@ -122,14 +120,14 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                                     )}`,
                                 },
                                 {
-                                    label: "External",
+                                    label: msg("External"),
                                     value: UserTypeEnum.External,
                                     description: html`${msg(
                                         "External users might be external consultants or B2C customers. These users don't get access to enterprise features.",
                                     )}`,
                                 },
                                 {
-                                    label: "Service account",
+                                    label: msg("Service account"),
                                     value: UserTypeEnum.ServiceAccount,
                                     description: html`${msg(
                                         "Service accounts should be used for machine-to-machine authentication or other automations.",
@@ -149,8 +147,10 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                     >
                         <input
                             type="text"
-                            value="${first(this.instance?.userPathTemplate, "")}"
-                            class="pf-c-form-control"
+                            value="${this.instance?.userPathTemplate ?? ""}"
+                            class="pf-c-form-control pf-m-monospace"
+                            autocomplete="off"
+                            spellcheck="false"
                             required
                         />
                         <p class="pf-c-form__helper-text">
@@ -164,6 +164,7 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                             .fetchObjects=${async (query?: string): Promise<Group[]> => {
                                 const args: CoreGroupsListRequest = {
                                     ordering: "name",
+                                    includeUsers: false,
                                 };
                                 if (query !== undefined) {
                                     args.search = query;
@@ -193,5 +194,11 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                     </ak-form-element-horizontal>
                 </div>
             </ak-form-group>`;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-stage-user-write-form": UserWriteStageForm;
     }
 }

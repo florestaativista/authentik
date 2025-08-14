@@ -1,5 +1,6 @@
 import { dateTimeLocal } from "@goauthentik/authentik/common/utils";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
+import { dateTimeLocal } from "@goauthentik/common/temporal";
 import "@goauthentik/elements/forms/HorizontalFormElement";
 import { ModelForm } from "@goauthentik/elements/forms/ModelForm";
 
@@ -34,12 +35,11 @@ export class UserTokenForm extends ModelForm<Token, string> {
                 identifier: this.instance.identifier,
                 tokenRequest: data,
             });
-        } else {
-            data.intent = this.intent;
-            return new CoreApi(DEFAULT_CONFIG).coreTokensCreate({
-                tokenRequest: data,
-            });
         }
+        data.intent = this.intent;
+        return new CoreApi(DEFAULT_CONFIG).coreTokensCreate({
+            tokenRequest: data,
+        });
     }
 
     renderForm(): TemplateResult {
@@ -56,7 +56,9 @@ export class UserTokenForm extends ModelForm<Token, string> {
                 <input
                     type="text"
                     value="${ifDefined(this.instance?.identifier)}"
-                    class="pf-c-form-control"
+                    class="pf-c-form-control pf-m-monospace"
+                    autocomplete="off"
+                    spellcheck="false"
                     required
                 />
             </ak-form-element-horizontal>
@@ -67,7 +69,7 @@ export class UserTokenForm extends ModelForm<Token, string> {
                     class="pf-c-form-control"
                 />
             </ak-form-element-horizontal>
-            ${this.intent == IntentEnum.AppPassword
+            ${this.intent === IntentEnum.AppPassword
                 ? html`<ak-form-element-horizontal label=${msg("Expiring")} name="expires">
                       <input
                           type="datetime-local"
@@ -77,5 +79,11 @@ export class UserTokenForm extends ModelForm<Token, string> {
                       />
                   </ak-form-element-horizontal>`
                 : html``}`;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-user-token-form": UserTokenForm;
     }
 }
