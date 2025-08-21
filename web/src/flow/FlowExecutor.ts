@@ -11,6 +11,7 @@ import { WebsocketClient } from "@goauthentik/common/ws";
 import { Interface } from "@goauthentik/elements/Interface";
 import "@goauthentik/elements/LoadingOverlay";
 import "@goauthentik/elements/ak-locale-context";
+import { themeImage } from "@goauthentik/elements/utils/images";
 import "@goauthentik/flow/sources/apple/AppleLoginInit";
 import "@goauthentik/flow/sources/plex/PlexLoginInit";
 import "@goauthentik/flow/stages/FlowErrorStage";
@@ -442,7 +443,9 @@ export class FlowExecutor extends Interface implements StageHost {
     renderChallengeWrapper(): TemplateResult {
         const logo = html`<div class="pf-c-login__main-header pf-c-brand ak-brand">
             <img
-                src="${first(this.brand?.brandingLogo, globalAK()?.brand.brandingLogo, "")}"
+                src="${themeImage(
+                    first(this.brand?.brandingLogo, globalAK()?.brand.brandingLogo, ""),
+                )}"
                 alt="authentik Logo"
             />
         </div>`;
@@ -503,28 +506,18 @@ export class FlowExecutor extends Interface implements StageHost {
                                         <footer class="pf-c-login__footer">
                                             <ul class="pf-c-list pf-m-inline">
                                                 ${this.brand?.uiFooterLinks?.map((link) => {
+                                                    if (link.href) {
+                                                        return html`<li>
+                                                            <a href="${link.href}">${link.name}</a>
+                                                        </li>`;
+                                                    }
                                                     return html`<li>
-                                                        <a href="${link.href || ""}"
-                                                            >${link.name}</a
-                                                        >
+                                                        <span>${link.name}</span>
                                                     </li>`;
                                                 })}
                                                 <li>
-                                                    <a
-                                                        href="https://goauthentik.io?utm_source=authentik&amp;utm_medium=flow"
-                                                        >${msg("Powered by authentik")}</a
-                                                    >
+                                                    <span>${msg("Powered by authentik")}</span>
                                                 </li>
-                                                ${this.flowInfo?.background?.startsWith("/static")
-                                                    ? html`
-                                                          <li>
-                                                              <a
-                                                                  href="https://unsplash.com/@sorasagano"
-                                                                  >${msg("Background image")}</a
-                                                              >
-                                                          </li>
-                                                      `
-                                                    : html``}
                                             </ul>
                                         </footer>
                                     </div>

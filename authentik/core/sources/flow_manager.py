@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _
 from structlog.stdlib import get_logger
 
 from authentik.core.models import Source, SourceUserMatchingModes, User, UserSourceConnection
-from authentik.core.sources.stage import PLAN_CONTEXT_SOURCES_CONNECTION, PostUserEnrollmentStage
+from authentik.core.sources.stage import PLAN_CONTEXT_SOURCES_CONNECTION, PostSourceStage
 from authentik.events.models import Event, EventAction
 from authentik.flows.exceptions import FlowNonApplicableException
 from authentik.flows.models import Flow, FlowToken, Stage, in_memory_stage
@@ -206,17 +206,13 @@ class SourceFlowManager:
 
     def get_stages_to_append(self, flow: Flow) -> list[Stage]:
         """Hook to override stages which are appended to the flow"""
-        if not self.source.enrollment_flow:
-            return []
-        if flow.slug == self.source.enrollment_flow.slug:
-            return [
-                in_memory_stage(PostUserEnrollmentStage),
-            ]
-        return []
+        return [
+            in_memory_stage(PostSourceStage),
+        ]
 
     def _prepare_flow(
         self,
-        flow: Flow,
+        flow: Flow | None,
         connection: UserSourceConnection,
         stages: list[StageView] | None = None,
         **kwargs,
@@ -266,6 +262,9 @@ class SourceFlowManager:
             )
         # We run the Flow planner here so we can pass the Pending user in the context
         planner = FlowPlanner(flow)
+        # We append some stages so the initial flow we get might be empty
+        planner.allow_empty_flows = True
+        planner.use_cache = False
         plan = planner.plan(self.request, kwargs)
         for stage in self.get_stages_to_append(flow):
             plan.append_stage(stage)
@@ -310,7 +309,9 @@ class SourceFlowManager:
         # When request isn't authenticated we jump straight to auth
         if not self.request.user.is_authenticated:
             return self.handle_auth(connection)
-        # Connection has already been saved
+        if SESSION_KEY_OVERRIDE_FLOW_TOKEN in self.request.session:
+            return self._prepare_flow(None, connection)
+        connection.save()
         Event.new(
             EventAction.SOURCE_LINKED,
             message="Linked Source",
@@ -324,7 +325,7 @@ class SourceFlowManager:
             reverse(
                 "authentik_core:if-user",
             )
-            + f"#/settings;page-{self.source.slug}"
+            + "#/settings;page-sources"
         )
 
     def handle_enroll(

@@ -325,7 +325,7 @@ class AuthenticatorValidateStageView(ChallengeStageView):
             serializer = SelectableStageSerializer(
                 data={
                     "pk": stage.pk,
-                    "name": stage.friendly_name or stage.name,
+                    "name": getattr(stage, "friendly_name", stage.name),
                     "verbose_name": str(stage._meta.verbose_name)
                     .replace("Setup Stage", "")
                     .strip(),
@@ -411,9 +411,14 @@ class AuthenticatorValidateStageView(ChallengeStageView):
             webauthn_device: WebAuthnDevice = response.device
             self.logger.debug("Set user from user-less flow", user=webauthn_device.user)
             self.executor.plan.context[PLAN_CONTEXT_PENDING_USER] = webauthn_device.user
+            # We already set a default method in the validator above
+            # so this needs to have higher priority
             self.executor.plan.context[PLAN_CONTEXT_METHOD] = "auth_webauthn_pwl"
-            self.executor.plan.context[PLAN_CONTEXT_METHOD_ARGS] = {
-                "device": webauthn_device,
-                "device_type": webauthn_device.device_type,
-            }
+            self.executor.plan.context.setdefault(PLAN_CONTEXT_METHOD_ARGS, {})
+            self.executor.plan.context[PLAN_CONTEXT_METHOD_ARGS].update(
+                {
+                    "device": webauthn_device,
+                    "device_type": webauthn_device.device_type,
+                }
+            )
         return self.set_valid_mfa_cookie(response.device)
